@@ -21,16 +21,19 @@ typedef struct {
 
 typedef struct {
 	char* name;
+	int id;
 	mb_message_t *first_msg;
 	int num_msg;
 	mb_req_t *first_req;
 	int num_req;
+	int conn_process;
 	mb_mailbox_t *next;
 } mb_mailbox_t;
 
 typedef struct {
 	mb_mailbox_t *first_mb;
 	int num_mbs;
+	int id_master;
 } mb_mbs_t;
 
 #endif /* _MBOX_H_ */
