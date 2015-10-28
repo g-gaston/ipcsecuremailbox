@@ -13,5 +13,6 @@ CPPFLAGS.main.c+=	-I${NETBSDSRCDIR}/minix
 CPPFLAGS.misc.c+=	-I${NETBSDSRCDIR}/minix
 CPPFLAGS.schedule.c+=	-I${NETBSDSRCDIR}/minix
 CPPFLAGS.utility.c+=	-I${NETBSDSRCDIR}/minix
+CPPFLAGS.mailbox.c+=	-I${NETBSDSRCDIR}/minix
 
 .include <minix.service.mk>

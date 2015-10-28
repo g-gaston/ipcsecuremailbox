@@ -1,8 +1,9 @@
+#ifndef _MBOX_H_
+#define _MBOX_H_
 /* Includes */
 
 
 /* Defines */
-
 
 
 typedef struct {
@@ -31,3 +32,5 @@ typedef struct {
 	mb_mailbox_t *first_mb;
 	int num_mbs;
 } mb_mbs_t;
+
+#endif /* _MBOX_H_ */
