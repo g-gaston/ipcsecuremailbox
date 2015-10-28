@@ -1,5 +1,4 @@
 #include "mailbox.h"
-#include "mblib.h"
 
 int do_mq_open() {
 
