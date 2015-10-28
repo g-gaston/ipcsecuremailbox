@@ -20,7 +20,9 @@ int mb_deposit(int id, char *text, int *pids_recv, int num_recv) {
 	message m;
 	m.m1_i1 = id;
 	m.m1_p1 = text;
-	m.m1_p2 = pids_recv;
+	char rec_list[num_recv];
+	memcpy(rec_list, pids_recv, num_recv);
+	m.m1_p2 = rec_list;
 	m.m1_i2 = num_recv;
 	return ( _syscall(PM_PROC_NR, MB_DEPOSIT, &m) );
 }
