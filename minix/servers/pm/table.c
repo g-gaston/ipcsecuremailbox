@@ -57,5 +57,10 @@ int (* const call_vec[NR_PM_CALLS])(void) = {
 	CALL(PM_EXEC_RESTART)	= do_execrestart,
 	CALL(PM_GETEPINFO)	= do_getepinfo,		/* getepinfo(2) */
 	CALL(PM_GETPROCNR)	= do_getprocnr,		/* getprocnr(2) */
-	CALL(PM_GETSYSINFO)	= do_getsysinfo		/* getsysinfo(2) */
+	CALL(PM_GETSYSINFO)	= do_getsysinfo,	/* getsysinfo(2) */
+	CALL(MB_OPEN)		= do_mb_open,		/* mb_open(2) */
+	CALL(MB_CLOSE)		= do_mb_close,		/* mb_close(2) */
+	CALL(MB_DEPOSIT)	= do_mb_deposit,	/* mb_deposit(2) */
+	CALL(MB_RETRIEVE)	= do_mb_retrieve,	/* mb_retrieve(2) */
+	CALL(MB_REQNOT)		= do_mb_reqnot		/* mb_reqnot(2) */
 };

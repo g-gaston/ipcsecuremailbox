@@ -41,3 +41,4 @@ releasetools/revision
 share/zoneinfo/builddir
 lib/libc/compat__*
 .gdbinit
+sftp-config.json

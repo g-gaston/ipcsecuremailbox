@@ -2,7 +2,7 @@
 
 NOOBJ=		# defined
 
-INCS+=	env.h fetch.h lib.h libutil.h varargs.h configfile.h
+INCS+=	env.h fetch.h lib.h libutil.h varargs.h configfile.h mblib.h
 
 .include <bsd.own.mk>
 

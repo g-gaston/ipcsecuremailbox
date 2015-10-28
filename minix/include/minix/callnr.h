@@ -58,8 +58,14 @@
 #define PM_GETEPINFO		(PM_BASE + 45)
 #define PM_GETPROCNR		(PM_BASE + 46)
 #define PM_GETSYSINFO		(PM_BASE + 47)
+/* New calls of mailbox */
+#define MB_OPEN			(PM_BASE + 48)
+#define MB_CLOSE		(PM_BASE + 49)
+#define MB_DEPOSIT		(PM_BASE + 50)
+#define MB_RETRIEVE		(PM_BASE + 51)
+#define MB_REQNOT		(PM_BASE + 52)
 
-#define NR_PM_CALLS		48	/* highest number from base plus one */
+#define NR_PM_CALLS		53	/* highest number from base plus one */
 
 /*===========================================================================*
  *				Calls to VFS				     *
