@@ -10,13 +10,13 @@ typedef struct {
 	char *text;
 	int *receivers_pid;
 	int num_rec;
-	mb_message_t *next;
+	struct mb_message_t *next;
 } mb_message_t;
 
 typedef struct {
 	int pid;
 	int signum;
-	mb_req_t *next;
+	struct mb_req_t *next;
 } mb_req_t;
 
 typedef struct {
@@ -27,7 +27,7 @@ typedef struct {
 	mb_req_t *first_req;
 	int num_req;
 	int conn_process;
-	mb_mailbox_t *next;
+	struct mb_mailbox_t *next;
 } mb_mailbox_t;
 
 typedef struct {
