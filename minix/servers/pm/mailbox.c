@@ -16,7 +16,7 @@ int do_mb_close() {
 
 int do_mb_deposit(int id, char *text, int *pids_recv, int num_rec) {
 	/* Error handling */
-	if (strlen(text) >= MAX_LEN_MESS)
+	if (strlen(text) >= MAX_LEN_MSG)
 		return MB_MSGTOOLONG_ERROR;
 	if (num_rec >= MAX_N_REC)
 		return MB_ERROR;
