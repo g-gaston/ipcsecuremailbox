@@ -12,7 +12,7 @@
 #define MB_BUFFERTOOSMALL_ERROR -5
 #define MB_EMPTYMB_ERROR -6
 #define MB_FULNOTIFYLIST_ERROR -7
-
+#define MB_NOMSG_ERROR -8
 
 int mb_open(char *name) {
 	message m;
