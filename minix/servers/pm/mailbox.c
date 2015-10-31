@@ -6,8 +6,8 @@
 #define MAX_NUM_MAILBOXES 10
 
 
-#define MB_NAME_ERROR -8
-#define MB_CLOSE_ERROR -9
+#define MB_NAME_ERROR -9
+#define MB_CLOSE_ERROR -10
 
 mb_mbs_t mailboxes;
 
