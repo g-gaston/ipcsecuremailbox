@@ -4,7 +4,10 @@
 
 
 /* Defines */
-
+#define MAX_LEN_MSG 255
+#define MAX_N_REC 16
+#define MAX_N_MSG 16
+// Añadir n maximo de mailboxes y no sé si algo más
 
 typedef struct {
 	char *text;

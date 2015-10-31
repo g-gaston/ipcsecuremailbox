@@ -29,8 +29,8 @@ int do_mb_deposit(int id, char *text, int *pids_recv, int num_rec) {
 
 	/* Create the message */
 	mb_message_t msg;
-	m.*text = *mess_text;
-	m.*receivers_pid = *rec_pid;
+	m.*text = mess_text;
+	m.*receivers_pid = rec_pid;
 	m.num_rec = n_rec;
 	m.*next = NULL;	
 	
@@ -46,11 +46,49 @@ int do_mb_deposit(int id, char *text, int *pids_recv, int num_rec) {
 		last->*next = msg;
 		mailbox->num_msg++;
 	}
+	
+	/* Notify */
+	for (int i=0; i<num_rec; i++) {
+		mb_req_t* req = mailbox->*first_req;
+		for (int j=0; j<mailbox->num_req; j++) {
+			if (rec_pid[i] == req->pid)
+				kill(req->pid, req->signum);
+			req = req->*next;
+		}
+	}
 	// End of critic area
 	return MB_OK;
 }
 
-int do_mb_retrieve() {
+int do_mb_retrieve(int id, char *buffer, int buffer_len) {
+	/* Error Handling */
+	// Begin of critic area
+	mb_mailbox_t* mailbox = get_mailbox(id);
+	if (mailbox == NULL) 
+		return MB_ERROR;
+	if (mailbox->num_msg == 0)
+		return MB_EMPTYMB_ERROR;
+	
+	/* Search for messages */
+	mb_message_t* msg = mailbox->first_msg;
+	int my_pid = getpid();
+	for (int i=0; i<mailbox->num_msg; i++) {
+		// Recorrer los mensajes del mailbox y en cada mensaje los pid a los que va dirigido.
+		int* list_pids = msg->*receivers_pid;
+		for (int j=0; i<msg->num_rec) {
+			if (list_pids[j] == my_pid){
+				if (strlen(msg) <= buffer_len) {
+					// Mensaje encontrado y cabe. Copiar mensaje al buffer, eliminar pid de la lista, si es el último, eliminar el mensaje del mailbox, return MB_OK
+					strcpy(buffer, list_pids[j]);
+
+					return MB_OK;
+
+			}
+				
+				
+		}
+	}
+
 
 }
 
