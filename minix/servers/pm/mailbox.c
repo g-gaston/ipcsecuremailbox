@@ -93,24 +93,21 @@ int do_mb_close() {
 
 	//If it exists
 	if (mbfound!=NULL){
-		//Check if it is subscribed and unsubscribed it
+		int my_pid = getpid();
+		//TODO:Check if it is subscribed and unsubscribed it
 
 
 		//Check messages and mark as read it
 		mb_message_t* prevmessage;
 		mb_message_t* message;
 		for (int i=0; i<MAX_NUM_MESSAGES; i++){
-			*previousmessage=*message;
-			*message=previous.next;
 			if(message != NULL){
-				//If coincidence break
-				if(mb.id==id){
-					*mbfound= *mb;
-					break;
-				}
+				//Check and delete reference
+				removePidReceivers(my_pid, *message);
 			}else{
 				break;
 			}
+			*message=message.next;
 		}
 
 
@@ -180,3 +177,35 @@ mb_mailbox_t getMailboxByName(char* name){
 	return NULL;	
 }
 
+void removePidReceivers(int pid, mb_message_t* message){
+	int* num_receivers = message.num_rec;
+	int receivers[num_receivers] = message.receivers_pid;
+
+	int coincidence=-1;
+	//Find the pid
+	for(int i=0; i<num_receivers; i++){
+		if(receivers[i]==pid){
+			coincidence=receivers[i];
+			break;
+		}
+	}
+
+	//Reform the array
+	int j=0;
+	int i=0;
+	int new_array[num_receivers-1];
+	if(coincidence != -1){
+		while(j<num_receivers-1){
+			if(j!=coincidence){
+				new_array[i]=receivers[j];
+			}				
+
+			j++;
+			i++;
+		}
+		message.num_rec--;
+		message.receivers_pid=*new_array;	
+	}
+	
+
+}
