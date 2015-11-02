@@ -19,7 +19,7 @@ int do_mb_close() {
 // usar malloc para text?
 int do_mb_deposit() {
 	int id = m_in.m1_i1;
-	char *text = m_in.m1_p1;
+	char *text[MAX_LEN_MSG] = m_in.m1_p1;
 	int *pid_recv = (int *)m_in.m1_p2;
 	int num_recv = m_in.m1_i2;
 
@@ -188,7 +188,6 @@ mb_req_t* get_last_req(mb_mailbox_t* mb) {
 }
 
 void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox) {
-	free(msg);
 	if (msg_prv == NULL) {
 		if (mailbox->num_msg == 1) {
 			mailbox->first_msg = NULL;
@@ -199,4 +198,5 @@ void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox
 		msg_prv->next = msg->next;
 	}
 	mailbox->num_msg--;
+	free(msg);
 }
