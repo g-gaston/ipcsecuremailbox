@@ -3,18 +3,12 @@
 #include "pm.h"
 #include <stdlib.h>
 
-#define MAX_NUM_MESSAGES 16
-#define MAX_NUM_MAILBOXES 10
-
-
-#define MB_NAME_ERROR -9
-#define MB_CLOSE_ERROR -10
-
 mb_mbs_t mailboxes={NULL,0,0};
 
 //Functions declaration
 mb_mailbox_t* getMailboxByID(int id);
 mb_mailbox_t* getMailboxByName(char* name);
+void removeMailboxByID(int id);
 void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox);
 void removePidReceivers(int pid, mb_message_t* message);
 
@@ -417,15 +411,15 @@ void removeMailboxByID(int id){
 
 	mb_mailbox_t* previous;
 	mb_mailbox_t* present;
-	int num_mail = mailboxes->num_mbs;
+	int num_mail = mailboxes.num_mbs;
 
-	present = mailboxes->first_req;
+	present = mailboxes.first_mb;
 	if(present!= NULL){
 		//Find the pid
-		for(int i=0; i<num_req-1; i++){
-			if(present->pid==pid){
+		for(int i=0; i<num_mail-1; i++){
+			if(present->id==id){
 				if(i==0){
-					mailbox->first_req=present->next;
+					mailboxes.first_mb=present->next;
 				}
 				else{
 					previous->next=present->next;

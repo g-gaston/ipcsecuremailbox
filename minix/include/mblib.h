@@ -13,6 +13,8 @@
 #define MB_EMPTYMB_ERROR -6
 #define MB_FULNOTIFYLIST_ERROR -7
 #define MB_NOMSG_ERROR -8
+#define MB_NAME_ERROR -9
+#define MB_CLOSE_ERROR -10
 
 int mb_open(char *name) {
 	message m;

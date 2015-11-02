@@ -10,6 +10,9 @@
 #define MAX_N_REC 16
 #define MAX_N_MSG 16
 #define MAX_N_REQ 16
+#define MAX_NUM_MESSAGES 16
+#define MAX_NUM_MAILBOXES 10
+
 // Añadir n maximo de mailboxes y no sé si algo más
 
 typedef struct mb_message_t {
