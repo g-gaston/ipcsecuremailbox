@@ -10,7 +10,12 @@
 #define MB_NAME_ERROR -9
 #define MB_CLOSE_ERROR -10
 
-mb_mbs_t mailboxes;
+mb_mbs_t mailboxes={NULL,0,0};
+
+//Functions declaration
+mb_mailbox_t* getMailboxByID(int id);
+mb_mailbox_t* getMailboxByName(char* name);
+void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox);
 void removePidReceivers(int pid, mb_message_t* message);
 
 int do_mb_open() {
@@ -21,36 +26,10 @@ int do_mb_open() {
 		return MB_NAME_ERROR;
 	}
 
-//Check if mailboxes is initialized
-/**	if (mailboxes == NULL){
-		mailboxes.first_mb=NULL;
-		mailboxes.num_mbs=0;
-		mailboxes.id_master=0;
-	}
-*/
 //Check if there is a mailbox with this name
-	mb_mailbox_t* previous;
-	mb_mailbox_t* mb;
 	mb_mailbox_t* mbfound=NULL;
-	if(mailboxes.first_mb!=NULL){
-		mb=mailboxes.first_mb;
-		if (mb->name==name){
-			mbfound=mb;
-		}else{
-			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
-				previous=mb;
-				mb=previous->next;
-				if(mb != NULL){
-					if(mb->name==name){
-						mbfound=mb;
-					}
-				}else{
-					break;
-				}
-			}
-		}
-		
-	}
+	mbfound=getMailboxByName(name);
+
 	//If null, create it
 	if (mbfound == NULL){
 		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
@@ -88,36 +67,15 @@ int do_mb_open() {
 int do_mb_close() {
 
 	int id=(int)m_in.m1_i1;
-	mb_mailbox_t* previous=NULL;
-	mb_mailbox_t* mb=NULL;
 	mb_mailbox_t* mbfound=NULL;
 
-	if(mailboxes.first_mb!=NULL){
-		mb=mailboxes.first_mb;
-		if (mb->id==id){
-			mbfound=mb;
-		}else{
-			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
-				previous=mb;
-				mb=previous->next;
-				if(mb != NULL){
-					//If coincidence break
-					if(mb->id==id){
-						mbfound= mb;
-						break;
-					}
-				}else{
-					break;
-				}
-			}
-		}
-		
-	}
+	mbfound= getMailboxByID(id);
 
 	//If it exists
 	if (mbfound!=NULL){
 		int my_pid = getpid();
-		//TODO:Check if it is subscribed and unsubscribed it
+		//Check if it is subscribed and unsubscribed it
+		removeMailboxSubscription(my_pid, mbfound);
 
 
 		//Check messages and mark as read it
@@ -140,11 +98,7 @@ int do_mb_close() {
 			
 		}else{
 		//It is the only waiting, so destroy the mailbox
-			//Link the previous mailbox with the next to this
-			previous->next=mbfound->next;
-
-			//Free space
-			free(mbfound);
+			removeMailboxByID(id);
 
 		}
 		return MB_OK;
@@ -166,6 +120,59 @@ int do_mb_retrieve() {
 int do_mb_reqnot() {
 
 }
+
+mb_mailbox_t* getMailboxByID(int id){
+	mb_mailbox_t* previous=NULL;
+	mb_mailbox_t* mb=NULL;
+
+	if(mailboxes.first_mb!=NULL){
+		mb=mailboxes.first_mb;
+		if (mb->id==id){
+			return mb;
+		}else{
+			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
+				previous=mb;
+				mb=previous->next;
+				if(mb != NULL){
+					//If coincidence break
+					if(mb->id==id){
+						return mb;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+		
+	}
+	return NULL;	
+}
+
+mb_mailbox_t* getMailboxByName(char* name){
+	mb_mailbox_t* previous;
+	mb_mailbox_t* mb;
+	if(mailboxes.first_mb!=NULL){
+		mb=mailboxes.first_mb;
+		if (mb->name==name){
+			 return mb;
+		}else{
+			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
+				previous=mb;
+				mb=previous->next;
+				if(mb != NULL){
+					if(mb->name==name){
+						return mb;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+		
+	}
+	return NULL;	
+}
+
 
 void removePidReceivers(int pid, mb_message_t* message){
 	int num_receivers = message->num_rec;
@@ -195,6 +202,62 @@ void removePidReceivers(int pid, mb_message_t* message){
 		}
 		message->num_rec--;
 		message->receivers_pid=new_array;	
+	}
+	
+
+}
+
+void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox){
+
+	mb_req_t* previous;
+	mb_req_t* present;
+	int num_req = mailbox->num_req;
+
+	present = mailbox->first_req;
+	if(present!= NULL){
+		//Find the pid
+		for(int i=0; i<num_req-1; i++){
+			if(present->pid==pid){
+				if(i==0){
+					mailbox->first_req=present->next;
+				}
+				else{
+					previous->next=present->next;
+				}
+			free(present);
+			break;
+			}
+		previous=present;
+		present=previous->next;
+		}
+	}
+	
+
+}
+
+void removeMailboxByID(int id){
+
+	mb_mailbox_t* previous;
+	mb_mailbox_t* present;
+	int num_mail = mailboxes->num_mbs;
+
+	present = mailboxes->first_req;
+	if(present!= NULL){
+		//Find the pid
+		for(int i=0; i<num_req-1; i++){
+			if(present->pid==pid){
+				if(i==0){
+					mailbox->first_req=present->next;
+				}
+				else{
+					previous->next=present->next;
+				}
+			free(present);
+			break;
+			}
+		previous=present;
+		present=previous->next;
+		}
 	}
 	
 
