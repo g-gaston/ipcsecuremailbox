@@ -19,12 +19,12 @@ int do_mb_close() {
 // usar malloc para text?
 int do_mb_deposit() {
 	int id = m_in.m1_i1;
-	char *text[MAX_LEN_MSG] = m_in.m1_p1;
 	int *pid_recv = (int *)m_in.m1_p2;
 	int num_recv = m_in.m1_i2;
 
 	/* Error handling */
-	if (strlen(text) >= MAX_LEN_MSG)
+	int len_msg = strlen(m_in.m1_p1);
+	if (len_msg >= MAX_LEN_MSG)
 		return MB_MSGTOOLONG_ERROR;
 	if (num_recv >= MAX_N_REC)
 		return MB_ERROR;
@@ -39,6 +39,8 @@ int do_mb_deposit() {
 	int size_msg = sizeof(char*)+sizeof(int*)+sizeof(int)+sizeof(mb_message_t*);
 	mb_message_t *msg = malloc(size_msg);
 
+	char *text = (char*)malloc(len_msg * sizeof(char));
+	strcpy(text, m_in.m1_p1);
 	msg->text = text;
 	msg->receivers_pid = pid_recv;
 	msg->num_rec = num_recv;
