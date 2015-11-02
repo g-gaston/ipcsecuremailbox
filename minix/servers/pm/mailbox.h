@@ -1,10 +1,16 @@
 #ifndef _MBOX_H_
 #define _MBOX_H_
 /* Includes */
-
+#include "pm.h"
+#include <stdlib.h>
+#include <signal.h>
 
 /* Defines */
-
+#define MAX_LEN_MSG 256
+#define MAX_N_REC 16
+#define MAX_N_MSG 16
+#define MAX_N_REQ 16
+// Añadir n maximo de mailboxes y no sé si algo más
 
 typedef struct mb_message_t {
 	char *text;
@@ -13,7 +19,7 @@ typedef struct mb_message_t {
 	struct mb_message_t *next;
 } mb_message_t;
 
-typedef struct mb_req_t{
+typedef struct mb_req_t {
 	int pid;
 	int signum;
 	struct mb_req_t *next;
