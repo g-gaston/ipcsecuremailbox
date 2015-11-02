@@ -4,6 +4,7 @@
 #include "pm.h"
 #include <stdlib.h>
 #include <signal.h>
+#include <string.h>
 
 /* Defines */
 #define MAX_LEN_MSG 256
