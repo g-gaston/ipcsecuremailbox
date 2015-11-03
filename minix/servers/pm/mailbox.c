@@ -19,13 +19,15 @@ mb_req_t* get_last_req(mb_mailbox_t* mb);
 
 
 int do_mb_open() {
-	char* name = (char*)m_in.m1_p1;
 
-//Check if there is a name
-	if (name == NULL){
+	int len_name = strlen(m_in.m1_p1);
+	char *name = (char*)malloc(len_name * sizeof(char) +1);
+	strcpy(name, m_in.m1_p1);
+
+	//Check if there is a name
+	if (name == NULL || len_name > MAX_LEN_NAME){
 		return MB_NAME_ERROR;
 	}
-
 //Check if there is a mailbox with this name
 	mb_mailbox_t* mbfound=NULL;
 	mbfound=getMailboxByName(name);
@@ -58,6 +60,7 @@ int do_mb_open() {
 
 	//If not, return id
 	}else{
+		mbfound->conn_process++;
 		return mbfound->id;
 	}
 }
@@ -68,6 +71,7 @@ int do_mb_close() {
 	mb_mailbox_t* mbfound=NULL;
 
 	mbfound= getMailboxByID(id);
+
 
 	//If it exists
 	if (mbfound!=NULL){
@@ -97,6 +101,7 @@ int do_mb_close() {
 		}else{
 		//It is the only waiting, so destroy the mailbox
 			removeMailboxByID(id);
+			mailboxes.num_mbs--;
 
 		}
 		return MB_OK;

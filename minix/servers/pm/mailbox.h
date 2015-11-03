@@ -11,7 +11,8 @@
 #define MAX_N_MSG 16
 #define MAX_N_REQ 16
 #define MAX_NUM_MESSAGES 16
-#define MAX_NUM_MAILBOXES 10
+#define MAX_NUM_MAILBOXES 16
+#define MAX_LEN_NAME 10
 
 // Añadir n maximo de mailboxes y no sé si algo más
 
