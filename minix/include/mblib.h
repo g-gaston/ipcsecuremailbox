@@ -3,6 +3,7 @@
 
 #include <lib.h>
 #include <unistd.h>
+#include <stdio.h>      /* Input/Output */
 
 #define MB_OK 0
 #define MB_ERROR -1
@@ -32,10 +33,8 @@ int mb_deposit(int id, char *text, int *pids_recv, int num_recv) {
 	message m;
 	m.m1_i1 = id;
 	m.m1_p1 = text;
-	int rec_list[num_recv];
-	for (int i = 0; i < num_recv; ++i) {
-		memcpy(rec_list[i], pids_recv[i], sizeof(int));
-	}
+	int * rec_list = malloc(num_recv * sizeof(int));
+   	memcpy(rec_list, pids_recv, num_recv * sizeof(int));
 	m.m1_p2 = (char *)rec_list; /* Warning when receiving message in mailbox.c */
 	m.m1_i2 = num_recv;
 	return ( _syscall(PM_PROC_NR, MB_DEPOSIT, &m) );
