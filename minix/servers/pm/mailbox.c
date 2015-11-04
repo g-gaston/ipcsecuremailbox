@@ -3,6 +3,8 @@
 #include "pm.h"
 #include <stdlib.h>
 #include <string.h>
+#include "glo.h"
+#include "mproc.h"
 
 mb_mbs_t mailboxes={NULL, 0, 0};
 
@@ -75,13 +77,14 @@ int do_mb_close() {
 
 	int id = (int)m_in.m1_i1;
 	mb_mailbox_t* mbfound = NULL;
-
+	register struct mproc *rmp = mp;
 	mbfound = getMailboxByID(id);
 
 
 	//If it exists
 	if (mbfound != NULL){
-		int my_pid = getpid();
+		
+		int my_pid = mproc[who_p].mp_pid;
 		//Check if it is subscribed and unsubscribed it
 		removeMailboxSubscription(my_pid, mbfound);
 
@@ -192,7 +195,8 @@ int do_mb_retrieve() {
 		return MB_EMPTYMB_ERROR;
 
 	/* Search for messages */
-	int my_pid = getpid();
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
 	mb_message_t* msg_prv = NULL;
 	mb_message_t* msg = mailbox->first_msg;
 	for (int i = 0; i < mailbox->num_msg; i++) {
@@ -237,7 +241,8 @@ int do_mb_reqnot() {
 	int size_req = sizeof(int)*2+sizeof(mb_req_t*);
 	mb_req_t *req = malloc(size_req);
 
-	req->pid = getpid();
+	register struct mproc *rmp = mp;
+	req->pid = mproc[who_p].mp_pid;
 	req->signum = signum;
 	req->next = NULL;
 
