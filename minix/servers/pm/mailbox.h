@@ -6,20 +6,20 @@
 /* Defines */
 
 
-typedef struct {
+typedef struct mb_message_t {
 	char *text;
 	int *receivers_pid;
 	int num_rec;
 	struct mb_message_t *next;
 } mb_message_t;
 
-typedef struct {
+typedef struct mb_req_t{
 	int pid;
 	int signum;
 	struct mb_req_t *next;
 } mb_req_t;
 
-typedef struct {
+typedef struct mb_mailbox_t {
 	char* name;
 	int id;
 	mb_message_t *first_msg;
@@ -30,8 +30,8 @@ typedef struct {
 	struct mb_mailbox_t *next;
 } mb_mailbox_t;
 
-typedef struct {
-	mb_mailbox_t *first_mb;
+typedef struct mb_mbs_ts{
+	struct mb_mailbox_t *first_mb;
 	int num_mbs;
 	int id_master;
 } mb_mbs_t;

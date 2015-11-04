@@ -11,9 +11,10 @@
 #define MB_CLOSE_ERROR -10
 
 mb_mbs_t mailboxes;
+void removePidReceivers(int pid, mb_message_t* message);
 
 int do_mb_open() {
-	char* name = (char*)m1_in->m1_p1;
+	char* name = (char*)m_in.m1_p1;
 
 //Check if there is a name
 	if (name == NULL){
@@ -21,26 +22,27 @@ int do_mb_open() {
 	}
 
 //Check if mailboxes is initialized
-	if (mailboxes == NULL ){
-		mailboxes->first_mb=NULL;
-		mailboxes->num_mbs=0;
-		mailboxes->id_master=0;
+/**	if (mailboxes == NULL){
+		mailboxes.first_mb=NULL;
+		mailboxes.num_mbs=0;
+		mailboxes.id_master=0;
 	}
-
+*/
 //Check if there is a mailbox with this name
-	mb_mailbox_t previous=NULL;
-	mb_mailbox_t mb=NULL;
-	if(mailboxes->first_mb!=NULL){
-		mbfound=mailboxes->first_mb;
-		if (mbfound->name==name){
-			return *mbfound;
+	mb_mailbox_t* previous;
+	mb_mailbox_t* mb;
+	mb_mailbox_t* mbfound=NULL;
+	if(mailboxes.first_mb!=NULL){
+		mb=mailboxes.first_mb;
+		if (mb->name==name){
+			mbfound=mb;
 		}else{
 			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
-				*previous=*mbfound;
-				*mbfound=previous->next;
-				if(mbfound != NULL){
-					if(mbfound->name==name){
-						break;
+				previous=mb;
+				mb=previous->next;
+				if(mb != NULL){
+					if(mb->name==name){
+						mbfound=mb;
 					}
 				}else{
 					break;
@@ -51,13 +53,13 @@ int do_mb_open() {
 	}
 	//If null, create it
 	if (mbfound == NULL){
-		if(mailboxes->num_mbs < MAX_NUM_MAILBOXES){
+		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
 			mb_mailbox_t *mailbox=malloc(sizeof(mb_mailbox_t));
 			mailbox->name=name;
 
 			//Increase the id master counter
-			mailboxes->id_master++;
-			mailbox->id=mailboxes->id_master;
+			mailboxes.id_master++;
+			mailbox->id=mailboxes.id_master;
 
 			mailbox->first_msg=NULL;
 			mailbox->num_msg=0;
@@ -67,8 +69,8 @@ int do_mb_open() {
 			mailbox->next=NULL;
 
 			//Increase mailbox counter and add new mailbox
-			mailboxes->num_mbs++;
-			mailboxes->first_mb=*mailbox;
+			mailboxes.num_mbs++;
+			mailboxes.first_mb=mailbox;
 			return mailbox->id;
 		//Max size exceed, return error
 		}else{
@@ -85,23 +87,23 @@ int do_mb_open() {
 
 int do_mb_close() {
 
-	int* id=(int*)m1_in->m1_i1;
+	int id=(int)m_in.m1_i1;
 	mb_mailbox_t* previous=NULL;
-	mb_mailbox_t mb=NULL;
+	mb_mailbox_t* mb=NULL;
 	mb_mailbox_t* mbfound=NULL;
 
-	if(mailboxes->first_mb!=NULL){
-		mb=mailboxes->first_mb;
+	if(mailboxes.first_mb!=NULL){
+		mb=mailboxes.first_mb;
 		if (mb->id==id){
-			return *mb;
+			mbfound=mb;
 		}else{
 			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
-				*previous=*mb;
-				*mb=previous->next;
+				previous=mb;
+				mb=previous->next;
 				if(mb != NULL){
 					//If coincidence break
 					if(mb->id==id){
-						*mbfound= *mb;
+						mbfound= mb;
 						break;
 					}
 				}else{
@@ -124,11 +126,11 @@ int do_mb_close() {
 		for (int i=0; i<MAX_NUM_MESSAGES; i++){
 			if(message != NULL){
 				//Check and delete reference
-				removePidReceivers(my_pid, *message);
+				removePidReceivers(my_pid, message);
 			}else{
 				break;
 			}
-			*message=message->next;
+			message=message->next;
 		}
 
 
@@ -142,14 +144,6 @@ int do_mb_close() {
 			previous->next=mbfound->next;
 
 			//Free space
-			free(mbfound->name);
-			free(mbfound->id);
-			free(mbfound->first_msg);
-			free(mbfound->num_msg);
-			free(mbfound->first_req);
-			free(mbfound->num_req);
-			free(mbfound->conn_process);
-			free(mbfound->next);
 			free(mbfound);
 
 		}
@@ -173,14 +167,9 @@ int do_mb_reqnot() {
 
 }
 
- getMailboxByName(char* name){
-	
-	return NULL;	
-}
-
 void removePidReceivers(int pid, mb_message_t* message){
-	int* num_receivers = message->num_rec;
-	int receivers[num_receivers] = message->receivers_pid;
+	int num_receivers = message->num_rec;
+	int* receivers= message->receivers_pid;
 
 	int coincidence=-1;
 	//Find the pid
@@ -205,7 +194,7 @@ void removePidReceivers(int pid, mb_message_t* message){
 			i++;
 		}
 		message->num_rec--;
-		message->receivers_pid=*new_array;	
+		message->receivers_pid=new_array;	
 	}
 	
 
