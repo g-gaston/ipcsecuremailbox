@@ -2,8 +2,9 @@
 #include "mblib.h"
 #include "pm.h"
 #include <stdlib.h>
+#include <string.h>
 
-mb_mbs_t mailboxes={NULL,0,0};
+mb_mbs_t mailboxes={NULL, 0, 0};
 
 //Functions declaration
 mb_mailbox_t* getMailboxByID(int id);
@@ -20,20 +21,27 @@ mb_req_t* get_last_req(mb_mailbox_t* mb);
 
 int do_mb_open() {
 
-	char *name = m_in.m1_p1;
+	char *name = m_in.m3_ca1;
 	//Check if there is a name
 	if (name == NULL || strlen(name) > MAX_LEN_NAME){
 		return MB_NAME_ERROR;
 	}
+
+
 //Check if there is a mailbox with this name
-	mb_mailbox_t* mbfound=NULL;
-	mbfound=getMailboxByName(name);
+	mb_mailbox_t* mbfound = NULL;
+	mbfound = getMailboxByName(name);
 
 	//If null, create it
 	if (mbfound == NULL){
 		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
-			mb_mailbox_t *mailbox=malloc(sizeof(mb_mailbox_t));
-			mailbox->name=name;
+			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
+
+			char *d = malloc(strlen(name) + 1);   // Space for length plus nul
+			if (d == NULL) return MB_ERROR;       // No memory
+			strcpy(d, name);
+
+			mailbox->name = d;
 
 			//Increase the id master counter
 			mailboxes.id_master++;
@@ -56,22 +64,23 @@ int do_mb_open() {
 		}
 
 	//If not, return id
-	}else{
+	} else {
 		mbfound->conn_process++;
+		//printf("Mb coinc, returning id %d, name: %s, conn process: %d\n", mbfound->id, mbfound->name, mbfound->conn_process);
 		return mbfound->id;
 	}
 }
 
 int do_mb_close() {
 
-	int id=(int)m_in.m1_i1;
-	mb_mailbox_t* mbfound=NULL;
+	int id = (int)m_in.m1_i1;
+	mb_mailbox_t* mbfound = NULL;
 
-	mbfound= getMailboxByID(id);
+	mbfound = getMailboxByID(id);
 
 
 	//If it exists
-	if (mbfound!=NULL){
+	if (mbfound != NULL){
 		int my_pid = getpid();
 		//Check if it is subscribed and unsubscribed it
 		removeMailboxSubscription(my_pid, mbfound);
@@ -80,7 +89,7 @@ int do_mb_close() {
 		//Check messages and mark as read it
 		mb_message_t* prevmessage;
 		mb_message_t* message;
-		for (int i=0; i<MAX_NUM_MESSAGES; i++){
+		for (int i = 0; i < MAX_NUM_MESSAGES; i++) {
 			if(message != NULL){
 				//Check and delete reference
 				removePidReceivers(my_pid, message);
@@ -92,10 +101,9 @@ int do_mb_close() {
 
 
 		//If there are more processes connected discount one process
-		if(mbfound->conn_process>1){
+		if (mbfound->conn_process > 1) {
 			mbfound->conn_process--;
-
-		}else{
+		} else {
 		//It is the only waiting, so destroy the mailbox
 			removeMailboxByID(id);
 			mailboxes.num_mbs--;
@@ -103,7 +111,7 @@ int do_mb_close() {
 		}
 		return MB_OK;
 	//If try to close an unexisting mailbox
-	}else{
+	} else {
 		return MB_CLOSE_ERROR;
 	}
 }
@@ -111,28 +119,34 @@ int do_mb_close() {
 // usar malloc para text?
 int do_mb_deposit() {
 	int id = m_in.m1_i1;
-	int *pid_recv = (int *)m_in.m1_p2;
-	int num_recv = m_in.m1_i2;
+	int num_recv = m_in.m1_i3;
+	int len_msg = m_in.m1_i2;
 
 	/* Error handling */
-	int len_msg = strlen(m_in.m1_p1);
 	if (len_msg >= MAX_LEN_MSG)
 		return MB_MSGTOOLONG_ERROR;
 	if (num_recv >= MAX_N_REC)
 		return MB_ERROR;
+
 	// Begin of critic area
-	mb_mailbox_t* mailbox = get_mailbox(id);
+	mb_mailbox_t* mailbox = getMailboxByID(id);
 	if (mailbox == NULL)
 		return MB_ERROR;
 	if (mailbox->num_msg >= MAX_N_MSG)
 		return MB_FULLMB_ERROR;
 
+	/* Alloc memory and copy msg text and pids receivers from user process */
+	int *pid_recv = malloc(num_recv * sizeof(int));
+	char *text = malloc(len_msg + 1);
+	sys_datacopy(who_e, (vir_bytes)m_in.m1_p1,
+					SELF, (vir_bytes)text, len_msg + 1);
+	sys_datacopy(who_e, (vir_bytes)m_in.m1_p2,
+					SELF, (vir_bytes)pid_recv, num_recv * sizeof(int));
+
 	/* Create the message */
-	int size_msg = sizeof(char*)+sizeof(int*)+sizeof(int)+sizeof(mb_message_t*);
+	int size_msg = sizeof(mb_message_t);
 	mb_message_t *msg = malloc(size_msg);
 
-	char *text = (char*)malloc(len_msg * sizeof(char));
-	strcpy(text, m_in.m1_p1);
 	msg->text = text;
 	msg->receivers_pid = pid_recv;
 	msg->num_rec = num_recv;
@@ -166,12 +180,12 @@ int do_mb_deposit() {
 
 int do_mb_retrieve() {
 	int id = m_in.m1_i1;
-	char *buffer = m_in.m1_p1;
 	int buffer_len = m_in.m1_i2;
+	char *buffer = m_in.m1_p1;
 
 	/* Error Handling */
 	// Begin of critic area
-	mb_mailbox_t* mailbox = get_mailbox(id);
+	mb_mailbox_t* mailbox = getMailboxByID(id);
 	if (mailbox == NULL)
 		return MB_ERROR;
 	if (mailbox->num_msg == 0)
@@ -181,13 +195,14 @@ int do_mb_retrieve() {
 	int my_pid = getpid();
 	mb_message_t* msg_prv = NULL;
 	mb_message_t* msg = mailbox->first_msg;
-	for (int i=0; i<mailbox->num_msg; i++) {
+	for (int i = 0; i < mailbox->num_msg; i++) {
 		// Recorrer los mensajes del mailbox y en cada mensaje los pid a los que va dirigido.
 		int* list_pids = msg->receivers_pid;
 		for (int j=0; i<msg->num_rec; j++) {
 			if (list_pids[j] == my_pid){
-				if (strlen(msg->text) <= buffer_len) {
-					strcpy(buffer, msg->text);
+				if (strlen(msg->text) < buffer_len) {
+					sys_datacopy(SELF, (vir_bytes)msg->text,
+						who_e, (vir_bytes)buffer, strlen(msg->text) + 1);
 					while (j<msg->num_rec-1) {
 						list_pids[j]=list_pids[j+1];
 						j++;
@@ -213,7 +228,7 @@ int do_mb_reqnot() {
 	int signum = m_in.m1_i2;
 
 	// Begin of critic area
-	mb_mailbox_t* mailbox = get_mailbox(id);
+	mb_mailbox_t* mailbox = getMailboxByID(id);
 	if (mailbox == NULL)
 		return MB_ERROR;
 	if (mailbox->num_req >= MAX_N_REQ)
@@ -327,14 +342,14 @@ mb_mailbox_t* getMailboxByName(char* name){
 	mb_mailbox_t* mb;
 	if(mailboxes.first_mb!=NULL){
 		mb=mailboxes.first_mb;
-		if (mb->name==name){
-			 return mb;
+		if (strcmp(mb->name, name) == 0){
+			return mb;
 		}else{
 			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
 				previous=mb;
 				mb=previous->next;
 				if(mb != NULL){
-					if(mb->name==name){
+					if(strcmp(mb->name, name) == 0){
 						return mb;
 					}
 				}else{
@@ -390,7 +405,7 @@ void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox){
 	present = mailbox->first_req;
 	if(present!= NULL){
 		//Find the pid
-		for(int i=0; i<num_req-1; i++){
+		for(int i=0; i<num_req; i++){
 			if(present->pid==pid){
 				if(i==0){
 					mailbox->first_req=present->next;
@@ -418,7 +433,7 @@ void removeMailboxByID(int id){
 	present = mailboxes.first_mb;
 	if(present!= NULL){
 		//Find the pid
-		for(int i=0; i<num_mail-1; i++){
+		for(int i=0; i<num_mail; i++){
 			if(present->id==id){
 				if(i==0){
 					mailboxes.first_mb=present->next;

@@ -18,8 +18,12 @@
 #define MB_CLOSE_ERROR -10
 
 int mb_open(char *name) {
+	int name_len = strlen(name);
 	message m;
-	m.m1_p1 = name;
+	if (name_len >= 44) {
+		return MB_NAME_ERROR;
+	}
+	strcpy(m.m3_ca1, name);
 	return ( _syscall(PM_PROC_NR, MB_OPEN, &m) );
 }
 
@@ -33,10 +37,9 @@ int mb_deposit(int id, char *text, int *pids_recv, int num_recv) {
 	message m;
 	m.m1_i1 = id;
 	m.m1_p1 = text;
-	int * rec_list = malloc(num_recv * sizeof(int));
-   	memcpy(rec_list, pids_recv, num_recv * sizeof(int));
-	m.m1_p2 = (char *)rec_list; /* Warning when receiving message in mailbox.c */
-	m.m1_i2 = num_recv;
+	m.m1_p2 = pids_recv; /* Warning when receiving message in mailbox.c */
+	m.m1_i2 = strlen(text);
+	m.m1_i3 = num_recv;
 	return ( _syscall(PM_PROC_NR, MB_DEPOSIT, &m) );
 }
 
