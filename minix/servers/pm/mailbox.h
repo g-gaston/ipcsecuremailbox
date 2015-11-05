@@ -15,6 +15,19 @@
 #define MAX_NUM_MAILBOXES 16
 #define MAX_LEN_NAME 10
 
+#define MB_OK 0
+#define MB_ERROR 1
+#define MB_FULLMB_ERROR 2
+#define MB_MAXMB_ERROR 3
+#define MB_MSGTOOLONG_ERROR 4
+#define MB_BUFFERTOOSMALL_ERROR 5
+#define MB_EMPTYMB_ERROR 6
+#define MB_FULNOTIFYLIST_ERROR 7
+#define MB_NOMSG_ERROR 8
+#define MB_NAME_ERROR 9
+#define MB_CLOSE_ERROR 10
+#define MB_ALLOC_MEM_ERROR 11
+
 // Añadir n maximo de mailboxes y no sé si algo más
 
 typedef struct mb_message_t {

@@ -1,12 +1,11 @@
 #include "mailbox.h"
-#include "mblib.h"
 #include "pm.h"
 #include <stdlib.h>
 #include <string.h>
 #include "glo.h"
 #include "mproc.h"
 
-mb_mbs_t mailboxes={NULL, 0, 0};
+mb_mbs_t mailboxes={NULL, 0, 20}; //Start ids in 20 so we can use (1,20) for errors
 
 //Functions declaration
 mb_mailbox_t* getMailboxByID(int id);
@@ -56,6 +55,9 @@ int do_mb_open() {
 			mailbox->next=NULL;
 
 			//Increase mailbox counter and add new mailbox
+			if (mailboxes.num_mbs > 0) {
+				mailbox->next = mailboxes.first_mb;
+			}
 			mailboxes.num_mbs++;
 			mailboxes.first_mb = mailbox;
 			return mailbox->id;

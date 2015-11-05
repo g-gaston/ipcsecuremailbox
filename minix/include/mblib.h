@@ -18,6 +18,8 @@
 #define MB_CLOSE_ERROR -10
 #define MB_ALLOC_MEM_ERROR -11
 
+int transform_result(int result);
+
 int mb_open(char *name) {
 	int name_len = strlen(name);
 	message m;
@@ -25,13 +27,13 @@ int mb_open(char *name) {
 		return MB_NAME_ERROR;
 	}
 	strcpy(m.m3_ca1, name);
-	return ( _syscall(PM_PROC_NR, MB_OPEN, &m) );
+	return transform_result(_syscall(PM_PROC_NR, MB_OPEN, &m));
 }
 
 int mb_close(int id) {
 	message m;
 	m.m1_i1 = id;
-	return ( _syscall(PM_PROC_NR, MB_CLOSE, &m) );
+	return transform_result(_syscall(PM_PROC_NR, MB_CLOSE, &m));
 }
 
 int mb_deposit(int id, char *text, int *pids_recv, int num_recv) {
@@ -41,7 +43,7 @@ int mb_deposit(int id, char *text, int *pids_recv, int num_recv) {
 	m.m1_p2 = pids_recv; /* Warning when receiving message in mailbox.c */
 	m.m1_i2 = strlen(text);
 	m.m1_i3 = num_recv;
-	return ( _syscall(PM_PROC_NR, MB_DEPOSIT, &m) );
+	return transform_result(_syscall(PM_PROC_NR, MB_DEPOSIT, &m));
 }
 
 int mb_retrieve(int id, char *buffer, int buffer_len) {
@@ -49,14 +51,21 @@ int mb_retrieve(int id, char *buffer, int buffer_len) {
 	m.m1_i1 = id;
 	m.m1_p1 = buffer;
 	m.m1_i2 = buffer_len;
-	return ( _syscall(PM_PROC_NR, MB_RETRIEVE, &m) );
+	return transform_result(_syscall(PM_PROC_NR, MB_RETRIEVE, &m));
 }
 
 int mb_reqnot(int id, int signum) {
 	message m;
 	m.m1_i1 = id;
 	m.m1_i2 = signum;
-	return ( _syscall(PM_PROC_NR, MB_REQNOT, &m) );
+	return transform_result(_syscall(PM_PROC_NR, MB_REQNOT, &m));
+}
+
+int transform_result(int result) {
+	if (result < 21) {
+		result = -result;
+	}
+	return result;
 }
 
 #endif /* _MBLIB_H_ */
