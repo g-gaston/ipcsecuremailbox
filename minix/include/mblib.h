@@ -16,6 +16,7 @@
 #define MB_NOMSG_ERROR -8
 #define MB_NAME_ERROR -9
 #define MB_CLOSE_ERROR -10
+#define MB_ALLOC_MEM_ERROR -11
 
 int mb_open(char *name) {
 	int name_len = strlen(name);

@@ -15,11 +15,9 @@ void removeMailboxByID(int id);
 void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox);
 void removePidReceivers(int pid, mb_message_t* message);
 
-mb_mailbox_t* get_mailbox(int id);
 mb_message_t* get_last_message(mb_mailbox_t* mb);
 void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox);
 mb_req_t* get_last_req(mb_mailbox_t* mb);
-
 
 int do_mb_open() {
 
@@ -38,27 +36,28 @@ int do_mb_open() {
 	if (mbfound == NULL){
 		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
 			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
+			if (mailbox == NULL) return MB_ALLOC_MEM_ERROR;
 
 			char *d = malloc(strlen(name) + 1);   // Space for length plus nul
-			if (d == NULL) return MB_ERROR;       // No memory
+			if (d == NULL) return MB_ALLOC_MEM_ERROR;       // No memory
 			strcpy(d, name);
 
 			mailbox->name = d;
 
 			//Increase the id master counter
 			mailboxes.id_master++;
-			mailbox->id=mailboxes.id_master;
+			mailbox->id = mailboxes.id_master;
 
-			mailbox->first_msg=NULL;
-			mailbox->num_msg=0;
-			mailbox->first_req=NULL;
-			mailbox->num_req=0;
-			mailbox->conn_process=1;
+			mailbox->first_msg = NULL;
+			mailbox->num_msg = 0;
+			mailbox->first_req = NULL;
+			mailbox->num_req = 0;
+			mailbox->conn_process = 1;
 			mailbox->next=NULL;
 
 			//Increase mailbox counter and add new mailbox
 			mailboxes.num_mbs++;
-			mailboxes.first_mb=mailbox;
+			mailboxes.first_mb = mailbox;
 			return mailbox->id;
 		//Max size exceed, return error
 		}else{
@@ -83,7 +82,7 @@ int do_mb_close() {
 
 	//If it exists
 	if (mbfound != NULL){
-		
+
 		int my_pid = mproc[who_p].mp_pid;
 		//Check if it is subscribed and unsubscribed it
 		removeMailboxSubscription(my_pid, mbfound);
@@ -103,14 +102,14 @@ int do_mb_close() {
 		}
 
 
-		//If there are more processes connected discount one process
-		if (mbfound->conn_process > 1) {
-			mbfound->conn_process--;
-		} else {
-		//It is the only waiting, so destroy the mailbox
+		//If there are more processes and it is the only waiting, so destroy the mailbox
+		if (mbfound->conn_process == 1 && mbfound->num_msg == 0) {
 			removeMailboxByID(id);
 			mailboxes.num_mbs--;
-
+		} else if (mbfound->conn_process > 0) {
+			mbfound->conn_process--;
+		} else if (mbfound->conn_process == 0) {
+			return MB_CLOSE_ERROR;
 		}
 		return MB_OK;
 	//If try to close an unexisting mailbox
@@ -141,6 +140,9 @@ int do_mb_deposit() {
 	/* Alloc memory and copy msg text and pids receivers from user process */
 	int *pid_recv = malloc(num_recv * sizeof(int));
 	char *text = malloc(len_msg + 1);
+	if (pid_recv == NULL || text == NULL) {
+		return MB_ALLOC_MEM_ERROR;
+	}
 	sys_datacopy(who_e, (vir_bytes)m_in.m1_p1,
 					SELF, (vir_bytes)text, len_msg + 1);
 	sys_datacopy(who_e, (vir_bytes)m_in.m1_p2,
@@ -149,6 +151,7 @@ int do_mb_deposit() {
 	/* Create the message */
 	int size_msg = sizeof(mb_message_t);
 	mb_message_t *msg = malloc(size_msg);
+	if (msg == NULL) return MB_ALLOC_MEM_ERROR;
 
 	msg->text = text;
 	msg->receivers_pid = pid_recv;
@@ -169,9 +172,9 @@ int do_mb_deposit() {
 	}
 
 	/* Notify */
-	for (int i=0; i<num_recv; i++) {
+	for (int i = 0; i < num_recv; i++) {
 		mb_req_t* req = mailbox->first_req;
-		for (int j=0; j<mailbox->num_req; j++) {
+		for (int j = 0; j < mailbox->num_req; j++) {
 			if (pid_recv[i] == req->pid)
 				kill(req->pid, req->signum);
 			req = req->next;
@@ -202,16 +205,12 @@ int do_mb_retrieve() {
 	for (int i = 0; i < mailbox->num_msg; i++) {
 		// Recorrer los mensajes del mailbox y en cada mensaje los pid a los que va dirigido.
 		int* list_pids = msg->receivers_pid;
-		for (int j=0; i<msg->num_rec; j++) {
+		for (int j = 0; i < msg->num_rec; j++) {
 			if (list_pids[j] == my_pid){
 				if (strlen(msg->text) < buffer_len) {
 					sys_datacopy(SELF, (vir_bytes)msg->text,
 						who_e, (vir_bytes)buffer, strlen(msg->text) + 1);
-					while (j<msg->num_rec-1) {
-						list_pids[j]=list_pids[j+1];
-						j++;
-					}
-					msg->num_rec--;
+					removePidReceivers(my_pid, msg);
 					if (msg->num_rec == 0)
 						remove_msg(msg, msg_prv, mailbox);
 					return MB_OK;
@@ -238,7 +237,7 @@ int do_mb_reqnot() {
 	if (mailbox->num_req >= MAX_N_REQ)
 		return MB_FULNOTIFYLIST_ERROR;
 
-	int size_req = sizeof(int)*2+sizeof(mb_req_t*);
+	int size_req = sizeof(mb_req_t);
 	mb_req_t *req = malloc(size_req);
 
 	register struct mproc *rmp = mp;
@@ -262,25 +261,12 @@ int do_mb_reqnot() {
 	return MB_OK;
 }
 
-mb_mailbox_t* get_mailbox(int id) {
-	mb_mailbox_t *mb = mailboxes.first_mb;
-	for (int i=0; i<mailboxes.num_mbs; i++) {
-		if (mb == NULL)
-			return NULL;
-		if (mb->id==id)
-			return mb;
-		else
-			mb = mb->next;
-	}
-	return NULL;
-}
-
 mb_message_t* get_last_message(mb_mailbox_t* mb) {
 	mb_message_t *msg = mb->first_msg;
 	if (msg == NULL)
 		return NULL;
-	for (int i=0; i<mb->num_msg; i++) {
-		if (msg->next==NULL)
+	for (int i = 0; i < mb->num_msg; i++) {
+		if (msg->next == NULL)
 			return msg;
 		else
 			msg = msg->next;
@@ -292,8 +278,8 @@ mb_req_t* get_last_req(mb_mailbox_t* mb) {
 	mb_req_t *req = mb->first_req;
 	if (req == NULL)
 		return NULL;
-	for (int i=0; i<mb->num_req; i++) {
-		if (req->next==NULL)
+	for (int i = 0; i < mb->num_req; i++) {
+		if (req->next == NULL)
 			return req;
 		else
 			req = req->next;
@@ -312,6 +298,7 @@ void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox
 		msg_prv->next = msg->next;
 	}
 	mailbox->num_msg--;
+	free(msg->text);
 	free(msg);
 }
 
@@ -319,17 +306,17 @@ mb_mailbox_t* getMailboxByID(int id){
 	mb_mailbox_t* previous=NULL;
 	mb_mailbox_t* mb=NULL;
 
-	if(mailboxes.first_mb!=NULL){
+	if(mailboxes.first_mb != NULL){
 		mb=mailboxes.first_mb;
-		if (mb->id==id){
+		if (mb->id == id){
 			return mb;
 		}else{
-			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
-				previous=mb;
-				mb=previous->next;
+			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++){
+				previous = mb;
+				mb = previous->next;
 				if(mb != NULL){
 					//If coincidence break
-					if(mb->id==id){
+					if(mb->id == id){
 						return mb;
 					}
 				}else{
@@ -345,12 +332,12 @@ mb_mailbox_t* getMailboxByID(int id){
 mb_mailbox_t* getMailboxByName(char* name){
 	mb_mailbox_t* previous;
 	mb_mailbox_t* mb;
-	if(mailboxes.first_mb!=NULL){
+	if(mailboxes.first_mb != NULL){
 		mb=mailboxes.first_mb;
 		if (strcmp(mb->name, name) == 0){
 			return mb;
 		}else{
-			for (int i=0; i<MAX_NUM_MAILBOXES-1; i++){
+			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++){
 				previous=mb;
 				mb=previous->next;
 				if(mb != NULL){
@@ -370,13 +357,13 @@ mb_mailbox_t* getMailboxByName(char* name){
 
 void removePidReceivers(int pid, mb_message_t* message){
 	int num_receivers = message->num_rec;
-	int* receivers= message->receivers_pid;
+	int* receivers = message->receivers_pid;
 
 	int coincidence=-1;
 	//Find the pid
-	for(int i=0; i<num_receivers; i++){
-		if(receivers[i]==pid){
-			coincidence=receivers[i];
+	for(int i = 0; i < num_receivers; i++){
+		if(receivers[i] == pid){
+			coincidence = i;
 			break;
 		}
 	}
@@ -384,21 +371,25 @@ void removePidReceivers(int pid, mb_message_t* message){
 	//Reform the array
 	int j=0;
 	int i=0;
-	int new_array[num_receivers-1];
 	if(coincidence != -1){
-		while(j<num_receivers-1){
-			if(j!=coincidence){
-				new_array[i]=receivers[j];
+		if (num_receivers == 1) {
+			message->num_rec--;
+			message->receivers_pid=NULL;
+			free(receivers);
+			return;
+		}
+		int *new_array = malloc((num_receivers-1)*sizeof(int));
+		while(j < num_receivers && i < num_receivers-1){
+			if(j != coincidence){
+				new_array[i] = receivers[j];
+				i++;
 			}
-
 			j++;
-			i++;
 		}
 		message->num_rec--;
 		message->receivers_pid=new_array;
+		free(receivers);
 	}
-
-
 }
 
 void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox){
@@ -410,23 +401,21 @@ void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox){
 	present = mailbox->first_req;
 	if(present!= NULL){
 		//Find the pid
-		for(int i=0; i<num_req; i++){
-			if(present->pid==pid){
-				if(i==0){
-					mailbox->first_req=present->next;
+		for(int i = 0; i < num_req; i++){
+			if(present->pid == pid){
+				if(i == 0){
+					mailbox->first_req = present->next;
 				}
 				else{
-					previous->next=present->next;
+					previous->next = present->next;
 				}
 			free(present);
 			break;
 			}
-		previous=present;
-		present=previous->next;
+		previous = present;
+		present = previous->next;
 		}
 	}
-
-
 }
 
 void removeMailboxByID(int id){
@@ -438,21 +427,18 @@ void removeMailboxByID(int id){
 	present = mailboxes.first_mb;
 	if(present!= NULL){
 		//Find the pid
-		for(int i=0; i<num_mail; i++){
-			if(present->id==id){
-				if(i==0){
-					mailboxes.first_mb=present->next;
+		for(int i = 0; i < num_mail; i++){
+			if(present->id == id){
+				if(i == 0){
+					mailboxes.first_mb = present->next;
+				} else {
+					previous->next = present->next;
 				}
-				else{
-					previous->next=present->next;
-				}
-			free(present);
-			break;
+				free(present);
+				break;
 			}
-		previous=present;
-		present=previous->next;
+			previous = present;
+			present = previous->next;
 		}
 	}
-
-
 }
