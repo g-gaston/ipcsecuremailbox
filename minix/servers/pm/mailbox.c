@@ -177,8 +177,10 @@ int do_mb_deposit() {
 	for (int i = 0; i < num_recv; i++) {
 		mb_req_t* req = mailbox->first_req;
 		for (int j = 0; j < mailbox->num_req; j++) {
-			if (pid_recv[i] == req->pid)
-				kill(req->pid, req->signum);
+			if (pid_recv[i] == req->pid) {
+				if (check_sig(req->pid, req->signum, FALSE) == -1) 
+					return MB_ERROR;
+			}
 			req = req->next;
 		}
 	}
