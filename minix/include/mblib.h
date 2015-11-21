@@ -18,6 +18,9 @@
 #define MB_CLOSE_ERROR -10
 #define MB_ALLOC_MEM_ERROR -11
 #define MB_PERMISSION_ERROR -12
+#define MB_ROOT_ALREADY_REGISTERED_ERROR -13
+#define MB_USER_EXIST_ERROR -14
+#define MB_USER_NOT_EXIST_ERROR -15
 
 int transform_result(int result);
 
@@ -97,16 +100,26 @@ int mb_root_allow_retrieve(int pid){
 	m.m1_i1 = pid;
 	return transform_result(_syscall(PM_PROC_NR, MB_ROOTARETRIEVE, &m));
 }
-int mb_create_secure_mailbox(int *pids_recv, int num_recv, int *pids_sends, int num_sends){
+int mb_create_secure_mailbox(char *name, int *pids_recv, int num_recv, int *pids_sends, int num_sends){
+	int name_len = strlen(name);
 	message m;
+	if (name_len >= 44) {
+		return MB_NAME_ERROR;
+	}
+	strcpy(m.m3_ca1, name);
 	m.m1_i1 = num_recv;
 	m.m1_p1 = pids_recv;
 	m.m1_p2 = pids_sends; /* Warning when receiving message in mailbox.c */
 	m.m1_i2 = num_sends;
 	return transform_result(_syscall(PM_PROC_NR, MB_CREATESMAILBOX, &m));
 }
-int mb_create_public_mailbox(){
+int mb_create_public_mailbox(char *name){
+	int name_len = strlen(name);
 	message m;
+	if (name_len >= 44) {
+		return MB_NAME_ERROR;
+	}
+	strcpy(m.m3_ca1, name);
 	return transform_result(_syscall(PM_PROC_NR, MB_CREATEPMAILBOX, &m));
 }
 int mb_deny_send(int mb_id, int pid){
