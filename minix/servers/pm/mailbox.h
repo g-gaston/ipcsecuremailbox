@@ -28,6 +28,9 @@
 #define MB_CLOSE_ERROR 10
 #define MB_ALLOC_MEM_ERROR 11
 
+#define PRIVATE 1
+#define PUBLIC	0
+
 // Añadir n maximo de mailboxes y no sé si algo más
 
 typedef struct mb_message_t {
@@ -43,6 +46,11 @@ typedef struct mb_req_t {
 	struct mb_req_t *next;
 } mb_req_t;
 
+typedef struct mb_user_t {
+	int pid;
+	struct mb_user_t *next;
+} mb_user_t;
+
 typedef struct mb_mailbox_t {
 	char* name;
 	int id;
@@ -51,6 +59,16 @@ typedef struct mb_mailbox_t {
 	mb_req_t *first_req;
 	int num_req;
 	int conn_process;
+	int owner_pid;
+	int mailbox_type;
+	mb_user_t first_denied_send_user;
+	int denied_send_users;
+	mb_user_t first_allowed_send_user;
+	int allowed_send_users;
+	mb_user_t first_denied_retrieve_user;
+	int denied_retrieve_users;
+	mb_user_t first_allowed_retrieve_user;
+	int allowed_retrieve_users;
 	struct mb_mailbox_t *next;
 } mb_mailbox_t;
 

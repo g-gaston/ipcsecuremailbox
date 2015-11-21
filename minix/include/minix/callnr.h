@@ -78,8 +78,9 @@
 #define MB_ASEND			(PM_BASE + 65)
 #define MB_ARETRIEVE		(PM_BASE + 66)
 #define MB_REMOVEGROUP		(PM_BASE + 67)
+#define MB_REMOVEOLDMSG		(PM_BASE + 68)
 
-#define NR_PM_CALLS		68	/* highest number from base plus one */
+#define NR_PM_CALLS		69	/* highest number from base plus one */
 
 /*===========================================================================*
  *				Calls to VFS				     *

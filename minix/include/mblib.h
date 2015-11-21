@@ -139,6 +139,11 @@ int mb_remove_group(int mb_id){
 	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEGROUP, &m));
 }
 
+int mb_rmv_oldest_msg() {
+	message m;
+	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEOLDMSG, &m));
+}
+
 int transform_result(int result) {
 	if (result < 21) {
 		result = -result;

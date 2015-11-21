@@ -503,3 +503,7 @@ int do_mb_remove_group() {
 	return 0;
 }
 
+int do_mb_rmv_oldest_msg() {
+	return 0;
+}
+

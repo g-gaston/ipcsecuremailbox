@@ -76,5 +76,6 @@ int (* const call_vec[NR_PM_CALLS])(void) = {
 	CALL(MB_DRETRIEVE) 		= do_mb_deny_retrieve,
 	CALL(MB_ASEND) 			= do_mb_allow_send,
 	CALL(MB_ARETRIEVE) 		= do_mb_allow_retrieve,
-	CALL(MB_REMOVEGROUP) 	= do_mb_remove_group
+	CALL(MB_REMOVEGROUP) 	= do_mb_remove_group,
+	CALL(MB_REMOVEOLDMSG)	= do_mb_rmv_oldest_msg
 };

@@ -109,3 +109,4 @@ int do_mb_deny_retrieve(void);
 int do_mb_allow_send(void);
 int do_mb_allow_retrieve(void);
 int do_mb_remove_group(void);
+int do_mb_rmv_oldest_msg(void);
