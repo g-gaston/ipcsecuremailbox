@@ -140,8 +140,9 @@ int mb_remove_group(int mb_id){
 	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEGROUP, &m));
 }
 
-int mb_rmv_oldest_msg() {
+int mb_rmv_oldest_msg(int mb_id) {
 	message m;
+	m.m1_i1 = mb_id;
 	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEOLDMSG, &m));
 }
 

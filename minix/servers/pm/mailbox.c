@@ -490,11 +490,44 @@ int do_mb_allow_retrieve() {
 }
 
 int do_mb_remove_group() {
-	return 0;
+	int id = m_in.m1_i1;
+
+	//Check if the mailbox exists
+	mb_mailbox_t* mailbox = getMailboxByID(id);
+	if (mailbox == NULL)
+		return MB_ERROR;
+
+	//Check permission
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	//Check if OWNER
+	mb_user_t* owner = get_owner_by_pid(my_pid);
+	if(owner == NULL)
+		return MB_PERMISSION_ERROR;
+
+	removeMailboxByID(id);
+
+
 }
 
 int do_mb_rmv_oldest_msg() {
-	return 0;
+	int id = m_in.m1_i1;
+
+	//Check if the mailbox exists
+	mb_mailbox_t* mailbox = getMailboxByID(id);
+	if (mailbox == NULL)
+		return MB_ERROR;
+
+	//Check permission
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	//Check if OWNER
+	mb_user_t* owner = get_owner_by_pid(my_pid);
+	if(owner == NULL)
+		return MB_PERMISSION_ERROR;
+
+	mb_message_t oldest = mailbox.first_msg;
+	mailbox->first_msg = oldest.next;
 }
 
 mb_user_t* get_owner_by_pid(int pid) {
