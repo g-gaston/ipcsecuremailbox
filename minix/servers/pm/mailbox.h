@@ -81,6 +81,8 @@ typedef struct mb_mbs_ts{
 	int denied_send_users;
 	mb_user_t *first_denied_retrieve_user;
 	int denied_retrieve_users;
+	mb_user_t *first_owner;
+	int num_owners;
 } mb_mbs_t;
 
 #endif /* _MBOX_H_ */
