@@ -61,6 +61,84 @@ int mb_reqnot(int id, int signum) {
 	return transform_result(_syscall(PM_PROC_NR, MB_REQNOT, &m));
 }
 
+int mb_be_root() {
+	message m;
+	return transform_result(_syscall(PM_PROC_NR, MB_BEROOT, &m));
+}
+
+int mb_assign_leader(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ASSIGNLEADER, &m));
+}
+int mb_remove_leader(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_REMOVELEADER, &m));
+}
+int mb_root_deny_send(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ROOTDSEND, &m));
+}
+int mb_root_deny_retrieve(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ROOTDRETRIEVE, &m));
+}
+int mb_root_allow_send(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ROOTASEND, &m));
+}
+int mb_root_allow_retrieve(int pid){
+	message m;
+	m.m1_i1 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ROOTARETRIEVE, &m));
+}
+int mb_create_secure_mailbox(int *pids_recv, int num_recv, int *pids_sends, int num_sends){
+	message m;
+	m.m1_i1 = num_recv;
+	m.m1_p1 = pids_recv;
+	m.m1_p2 = pids_sends; /* Warning when receiving message in mailbox.c */
+	m.m1_i2 = num_sends;
+	return transform_result(_syscall(PM_PROC_NR, MB_CREATESMAILBOX, &m));
+}
+int mb_create_public_mailbox(){
+	message m;
+	return transform_result(_syscall(PM_PROC_NR, MB_CREATEPMAILBOX, &m));
+}
+int mb_deny_send(int mb_id, int pid){
+	message m;
+	m.m1_i1 = mb_id;
+	m.m1_i2 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_DSEND, &m));
+
+}
+int mb_deny_retrieve(int mb_id, int pid){
+	message m;
+	m.m1_i1 = mb_id;
+	m.m1_i2 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_DRETRIEVE, &m));
+}
+int mb_allow_send(int mb_id, int pid){
+	message m;
+	m.m1_i1 = mb_id;
+	m.m1_i2 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ASEND, &m));
+}
+int mb_allow_retrieve(int mb_id, int pid){
+	message m;
+	m.m1_i1 = mb_id;
+	m.m1_i2 = pid;
+	return transform_result(_syscall(PM_PROC_NR, MB_ARETRIEVE, &m));
+}
+int mb_remove_group(int mb_id){
+	message m;
+	m.m1_i1 = mb_id;
+	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEGROUP, &m));
+}
+
 int transform_result(int result) {
 	if (result < 21) {
 		result = -result;

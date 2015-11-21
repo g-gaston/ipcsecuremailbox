@@ -59,13 +59,27 @@
 #define PM_GETPROCNR		(PM_BASE + 46)
 #define PM_GETSYSINFO		(PM_BASE + 47)
 /* New calls of mailbox */
-#define MB_OPEN			(PM_BASE + 48)
-#define MB_CLOSE		(PM_BASE + 49)
-#define MB_DEPOSIT		(PM_BASE + 50)
-#define MB_RETRIEVE		(PM_BASE + 51)
-#define MB_REQNOT		(PM_BASE + 52)
+#define MB_OPEN				(PM_BASE + 48)
+#define MB_CLOSE			(PM_BASE + 49)
+#define MB_DEPOSIT			(PM_BASE + 50)
+#define MB_RETRIEVE			(PM_BASE + 51)
+#define MB_REQNOT			(PM_BASE + 52)
+#define MB_BEROOT			(PM_BASE + 53)
+#define MB_ASSIGNLEADER		(PM_BASE + 54)
+#define MB_REMOVELEADER		(PM_BASE + 55)
+#define MB_ROOTDSEND		(PM_BASE + 56)
+#define MB_ROOTDRETRIEVE	(PM_BASE + 57)
+#define MB_ROOTASEND		(PM_BASE + 58)
+#define MB_ROOTARETRIEVE	(PM_BASE + 60)
+#define MB_CREATESMAILBOX	(PM_BASE + 61)
+#define MB_CREATEPMAILBOX	(PM_BASE + 62)
+#define MB_DSEND			(PM_BASE + 63)
+#define MB_DRETRIEVE		(PM_BASE + 64)
+#define MB_ASEND			(PM_BASE + 65)
+#define MB_ARETRIEVE		(PM_BASE + 66)
+#define MB_REMOVEGROUP		(PM_BASE + 67)
 
-#define NR_PM_CALLS		53	/* highest number from base plus one */
+#define NR_PM_CALLS		68	/* highest number from base plus one */
 
 /*===========================================================================*
  *				Calls to VFS				     *

@@ -178,7 +178,7 @@ int do_mb_deposit() {
 		mb_req_t* req = mailbox->first_req;
 		for (int j = 0; j < mailbox->num_req; j++) {
 			if (pid_recv[i] == req->pid) {
-				if (check_sig(req->pid, req->signum, FALSE) == -1) 
+				if (check_sig(req->pid, req->signum, FALSE) == -1)
 					return MB_ERROR;
 			}
 			req = req->next;
@@ -446,3 +446,60 @@ void removeMailboxByID(int id){
 		}
 	}
 }
+
+int do_mb_be_root() {
+	return 0;
+}
+
+int do_mb_assign_leader() {
+	return 0;
+}
+
+int do_mb_remove_leader() {
+	return 0;
+}
+
+int do_mb_root_deny_send() {
+	return 0;
+}
+
+int do_mb_root_deny_retrieve() {
+	return 0;
+}
+
+int do_mb_root_allow_send() {
+	return 0;
+}
+
+int do_mb_root_allow_retrieve() {
+	return 0;
+}
+
+int do_mb_create_secure_mailbox() {
+	return 0;
+}
+
+int do_mb_create_public_mailbox() {
+	return 0;
+}
+
+int do_mb_deny_send() {
+	return 0;
+}
+
+int do_mb_deny_retrieve() {
+	return 0;
+}
+
+int do_mb_allow_send() {
+	return 0;
+}
+
+int do_mb_allow_retrieve() {
+	return 0;
+}
+
+int do_mb_remove_group() {
+	return 0;
+}
+

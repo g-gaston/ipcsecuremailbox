@@ -90,8 +90,22 @@ int pm_isokendpt(int ep, int *proc);
 void tell_vfs(struct mproc *rmp, message *m_ptr);
 
 /* mailbox.c */
-int do_mb_open(void);      
-int do_mb_close(void);  
+int do_mb_open(void);
+int do_mb_close(void);
 int do_mb_deposit(void);
 int do_mb_retrieve(void);
 int do_mb_reqnot(void);
+int do_mb_be_root(void);
+int do_mb_assign_leader(void);
+int do_mb_remove_leader(void);
+int do_mb_root_deny_send(void);
+int do_mb_root_deny_retrieve(void);
+int do_mb_root_allow_send(void);
+int do_mb_root_allow_retrieve(void);
+int do_mb_create_secure_mailbox(void);
+int do_mb_create_public_mailbox(void);
+int do_mb_deny_send(void);
+int do_mb_deny_retrieve(void);
+int do_mb_allow_send(void);
+int do_mb_allow_retrieve(void);
+int do_mb_remove_group(void);
