@@ -452,6 +452,11 @@ int do_mb_be_root() {
 }
 
 int do_mb_assign_leader() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	if (add_user(&mailboxes.first_owner, &mailboxes.num_owners, pid) == MB_OK) {
 		return MB_OK;
@@ -461,6 +466,11 @@ int do_mb_assign_leader() {
 }
 
 int do_mb_remove_leader() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	if (remove_user_by_pid(&mailboxes.first_owner, &mailboxes.num_owners, pid) == MB_OK) {
 		return MB_OK;
@@ -470,6 +480,11 @@ int do_mb_remove_leader() {
 }
 
 int do_mb_root_deny_send() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	if (add_user(&mailboxes.first_denied_send_user, &mailboxes.denied_send_users, pid) == MB_OK) {
 		return MB_OK;
@@ -479,6 +494,11 @@ int do_mb_root_deny_send() {
 }
 
 int do_mb_root_deny_retrieve() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	if (add_user(&mailboxes.first_denied_retrieve_user, &mailboxes.denied_retrieve_users, pid) == MB_OK) {
 		return MB_OK;
@@ -488,12 +508,22 @@ int do_mb_root_deny_retrieve() {
 }
 
 int do_mb_root_allow_send() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	remove_user_by_pid(&mailboxes.first_denied_send_user, &mailboxes.denied_send_users, pid);
 	return MB_OK;
 }
 
 int do_mb_root_allow_retrieve() {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	if (mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
 	int pid = m_in.m1_i1;
 	remove_user_by_pid(&mailboxes.first_denied_retrieve_user, &mailboxes.denied_retrieve_users, pid);
 	return MB_OK;
@@ -512,6 +542,11 @@ int do_mb_deny_send() {
 	int pid = m_in.m1_i2;
 	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
 	if (mb_found != NULL) {
+		register struct mproc *rmp = mp;
+		int my_pid = mproc[who_p].mp_pid;
+		if (mb_found->owner_pid != my_pid && mailboxes.root_id != my_pid) {
+			return MB_PERMISSION_ERROR;
+		}
 		if (mb_found->mailbox_type == PUBLIC) {
 			return add_user(&mb_found->first_denied_send_user, &mb_found->denied_send_users, pid);
 		} else {
@@ -526,6 +561,11 @@ int do_mb_deny_retrieve() {
 	int pid = m_in.m1_i2;
 	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
 	if (mb_found != NULL) {
+		register struct mproc *rmp = mp;
+		int my_pid = mproc[who_p].mp_pid;
+		if (mb_found->owner_pid != my_pid && mailboxes.root_id != my_pid) {
+			return MB_PERMISSION_ERROR;
+		}
 		if (mb_found->mailbox_type == PUBLIC) {
 			return add_user(&mb_found->first_denied_retrieve_user, &mb_found->denied_retrieve_users, pid);
 		} else {
@@ -540,6 +580,11 @@ int do_mb_allow_send() {
 	int pid = m_in.m1_i2;
 	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
 	if (mb_found != NULL) {
+		register struct mproc *rmp = mp;
+		int my_pid = mproc[who_p].mp_pid;
+		if (mb_found->owner_pid != my_pid && mailboxes.root_id != my_pid) {
+			return MB_PERMISSION_ERROR;
+		}
 		if (mb_found->mailbox_type == PUBLIC) {
 			return remove_user_by_pid(&mb_found->first_denied_send_user, &mb_found->denied_send_users, pid);
 		} else {
@@ -554,6 +599,11 @@ int do_mb_allow_retrieve() {
 	int pid = m_in.m1_i2;
 	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
 	if (mb_found != NULL) {
+		register struct mproc *rmp = mp;
+		int my_pid = mproc[who_p].mp_pid;
+		if (mb_found->owner_pid != my_pid && mailboxes.root_id != my_pid) {
+			return MB_PERMISSION_ERROR;
+		}
 		if (mb_found->mailbox_type == PUBLIC) {
 			return remove_user_by_pid(&mb_found->first_denied_retrieve_user, &mb_found->denied_retrieve_users, pid);
 		} else {
@@ -705,6 +755,14 @@ int remove_user_by_pid(mb_user_t **first_user, int *number_of_users, int pid) {
 }
 
 int create_mailbox(message m_in, int type) {
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+
+	if (get_user_by_pid(mailboxes.first_owner, mailboxes.num_owners, my_pid) == NULL &&
+		mailboxes.root_id != my_pid) {
+		return MB_PERMISSION_ERROR;
+	}
+
 	char *name = m_in.m3_ca1;
 	//Check if there is a name
 	if (name == NULL || strlen(name) > MAX_LEN_NAME) {
