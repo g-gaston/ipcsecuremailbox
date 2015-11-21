@@ -27,6 +27,7 @@
 #define MB_NAME_ERROR 9
 #define MB_CLOSE_ERROR 10
 #define MB_ALLOC_MEM_ERROR 11
+#define MB_PERMISSION_ERROR 12
 
 #define PRIVATE 1
 #define PUBLIC	0

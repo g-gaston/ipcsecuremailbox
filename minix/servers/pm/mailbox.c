@@ -508,8 +508,7 @@ int do_mb_remove_group() {
 		return MB_PERMISSION_ERROR;
 
 	removeMailboxByID(id);
-
-
+	return MB_OK;
 }
 
 int do_mb_rmv_oldest_msg() {
@@ -529,7 +528,12 @@ int do_mb_rmv_oldest_msg() {
 		return MB_PERMISSION_ERROR;
 
 	mb_message_t* oldest = mailbox->first_msg;
-	mailbox->first_msg = oldest->next;
+	if(oldest != NULL)
+		mailbox->first_msg = oldest->next;
+	else
+		mailbox->first_msg = NULL;
+	
+	return MB_OK;
 }
 
 mb_user_t* get_owner_by_pid(int pid) {
