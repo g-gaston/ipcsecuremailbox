@@ -17,6 +17,8 @@ void removePidReceivers(int pid, mb_message_t* message);
 mb_message_t* get_last_message(mb_mailbox_t* mb);
 void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox);
 mb_req_t* get_last_req(mb_mailbox_t* mb);
+mb_user_t* get_owner_by_pid(int pid);
+mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid);
 
 int do_mb_open() {
 
@@ -26,46 +28,12 @@ int do_mb_open() {
 		return MB_NAME_ERROR;
 	}
 
-
 //Check if there is a mailbox with this name
 	mb_mailbox_t* mbfound = NULL;
 	mbfound = getMailboxByName(name);
 
-	//If null, create it
 	if (mbfound == NULL){
-		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
-			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
-			if (mailbox == NULL) return MB_ALLOC_MEM_ERROR;
-
-			char *d = malloc(strlen(name) + 1);   // Space for length plus nul
-			if (d == NULL) return MB_ALLOC_MEM_ERROR;       // No memory
-			strcpy(d, name);
-
-			mailbox->name = d;
-
-			//Increase the id master counter
-			mailboxes.id_master++;
-			mailbox->id = mailboxes.id_master;
-
-			mailbox->first_msg = NULL;
-			mailbox->num_msg = 0;
-			mailbox->first_req = NULL;
-			mailbox->num_req = 0;
-			mailbox->conn_process = 1;
-			mailbox->next=NULL;
-
-			//Increase mailbox counter and add new mailbox
-			if (mailboxes.num_mbs > 0) {
-				mailbox->next = mailboxes.first_mb;
-			}
-			mailboxes.num_mbs++;
-			mailboxes.first_mb = mailbox;
-			return mailbox->id;
-		//Max size exceed, return error
-		}else{
-			return MB_MAXMB_ERROR;
-		}
-
+		return MB_ERROR;
 	//If not, return id
 	} else {
 		mbfound->conn_process++;
@@ -81,14 +49,12 @@ int do_mb_close() {
 	register struct mproc *rmp = mp;
 	mbfound = getMailboxByID(id);
 
-
 	//If it exists
 	if (mbfound != NULL){
 
 		int my_pid = mproc[who_p].mp_pid;
 		//Check if it is subscribed and unsubscribed it
 		removeMailboxSubscription(my_pid, mbfound);
-
 
 		//Check messages and mark as read it
 		mb_message_t* prevmessage;
@@ -103,12 +69,8 @@ int do_mb_close() {
 			message=message->next;
 		}
 
-
-		//If there are more processes and it is the only waiting, so destroy the mailbox
-		if (mbfound->conn_process == 1 && mbfound->num_msg == 0) {
-			removeMailboxByID(id);
-			mailboxes.num_mbs--;
-		} else if (mbfound->conn_process > 0) {
+		//If there are more decrease, if not error. ONLY owner removes
+		if (mbfound->conn_process > 0) {
 			mbfound->conn_process--;
 		} else if (mbfound->conn_process == 0) {
 			return MB_CLOSE_ERROR;
@@ -126,18 +88,34 @@ int do_mb_deposit() {
 	int num_recv = m_in.m1_i3;
 	int len_msg = m_in.m1_i2;
 
-	/* Error handling */
-	if (len_msg >= MAX_LEN_MSG)
-		return MB_MSGTOOLONG_ERROR;
-	if (num_recv >= MAX_N_REC)
-		return MB_ERROR;
-
 	// Begin of critic area
 	mb_mailbox_t* mailbox = getMailboxByID(id);
 	if (mailbox == NULL)
 		return MB_ERROR;
 	if (mailbox->num_msg >= MAX_N_MSG)
 		return MB_FULLMB_ERROR;
+
+	//Check permission of user for this mailbox
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	//Check if DENIED
+	mb_user_t* rootDeniedUser = get_user_by_pid(mailboxes.first_denied_send_user, mailboxes.denied_send_users, my_pid);
+	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox->first_denied_send_user, mailbox->denied_send_users, my_pid);
+	if (rootDeniedUser != NULL || ownerDeniedUser != NULL)
+		return MB_PERMISSION_ERROR;
+	//Check if allowed (if private/secured)
+	if (mailbox->mailbox_type == PRIVATE){
+		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox->first_allowed_send_user, mailbox->allowed_send_users, my_pid);
+		if(ownerAllowedUser==NULL)
+			return MB_PERMISSION_ERROR;
+	}
+
+
+	/* Error handling */
+	if (len_msg >= MAX_LEN_MSG)
+		return MB_MSGTOOLONG_ERROR;
+	if (num_recv >= MAX_N_REC)
+		return MB_ERROR;
 
 	/* Alloc memory and copy msg text and pids receivers from user process */
 	int *pid_recv = malloc(num_recv * sizeof(int));
@@ -201,9 +179,23 @@ int do_mb_retrieve() {
 	if (mailbox->num_msg == 0)
 		return MB_EMPTYMB_ERROR;
 
-	/* Search for messages */
+	//Check permission of user for this mailbox
 	register struct mproc *rmp = mp;
 	int my_pid = mproc[who_p].mp_pid;
+	//Check if DENIED
+	mb_user_t* rootDeniedUser = get_user_by_pid(mailboxes.first_denied_retrieve_user, mailboxes.denied_retrieve_users, my_pid);
+	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox->first_denied_retrieve_user, mailbox->denied_retrieve_users, my_pid);
+	if (rootDeniedUser != NULL || ownerDeniedUser != NULL)
+		return MB_PERMISSION_ERROR;
+	//Check if allowed (if private/secured)
+	if (mailbox->mailbox_type == PRIVATE){
+		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox->first_allowed_retrieve_user, mailbox->allowed_retrieve_users, my_pid);
+		if(ownerAllowedUser==NULL)
+			return MB_PERMISSION_ERROR;
+	}
+
+
+	/* Search for messages */
 	mb_message_t* msg_prv = NULL;
 	mb_message_t* msg = mailbox->first_msg;
 	for (int i = 0; i < mailbox->num_msg; i++) {
@@ -500,10 +492,100 @@ int do_mb_allow_retrieve() {
 }
 
 int do_mb_remove_group() {
-	return 0;
+	int id = m_in.m1_i1;
+
+	//Check if the mailbox exists
+	mb_mailbox_t* mailbox = getMailboxByID(id);
+	if (mailbox == NULL)
+		return MB_ERROR;
+
+	//Check permission
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	//Check if OWNER
+	mb_user_t* owner = get_owner_by_pid(my_pid);
+	if(owner == NULL)
+		return MB_PERMISSION_ERROR;
+
+	removeMailboxByID(id);
+	return MB_OK;
 }
 
 int do_mb_rmv_oldest_msg() {
-	return 0;
+	int id = m_in.m1_i1;
+
+	//Check if the mailbox exists
+	mb_mailbox_t* mailbox = getMailboxByID(id);
+	if (mailbox == NULL)
+		return MB_ERROR;
+
+	//Check permission
+	register struct mproc *rmp = mp;
+	int my_pid = mproc[who_p].mp_pid;
+	//Check if OWNER
+	mb_user_t* owner = get_owner_by_pid(my_pid);
+	if(owner == NULL)
+		return MB_PERMISSION_ERROR;
+
+	mb_message_t* oldest = mailbox->first_msg;
+	if(oldest != NULL)
+		mailbox->first_msg = oldest->next;
+	else
+		mailbox->first_msg = NULL;
+	
+	return MB_OK;
 }
 
+mb_user_t* get_owner_by_pid(int pid) {
+	mb_user_t* previous = NULL;
+	mb_user_t* user = NULL;
+
+	if(mailboxes.first_owner != NULL){
+		user = mailboxes.first_owner;
+		if (user->pid == pid){
+			return user;
+		}else{
+			for (int i = 0; i < mailboxes.num_owners-1; i++){
+				previous = user;
+				user = previous->next;
+				if(user != NULL){
+					//If coincidence break
+					if(user->pid == pid){
+						return user;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+
+	}
+	return NULL;
+}
+
+mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid) {
+	mb_user_t* previous = NULL;
+	mb_user_t* user = NULL;
+
+	if(first_user != NULL){
+		user = first_user;
+		if (user->pid == pid){
+			return user;
+		}else{
+			for (int i = 0; i < numb_users-1; i++){
+				previous = user;
+				user = previous->next;
+				if(user != NULL){
+					//If coincidence break
+					if(user->pid == pid){
+						return user;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+
+	}
+	return NULL;
+}
