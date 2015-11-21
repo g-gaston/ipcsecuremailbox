@@ -17,6 +17,8 @@ void removePidReceivers(int pid, mb_message_t* message);
 mb_message_t* get_last_message(mb_mailbox_t* mb);
 void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox);
 mb_req_t* get_last_req(mb_mailbox_t* mb);
+mb_user_t* get_owner_by_pid(int pid);
+mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid);
 
 int do_mb_open() {
 
@@ -98,12 +100,12 @@ int do_mb_deposit() {
 	int my_pid = mproc[who_p].mp_pid;
 	//Check if DENIED
 	mb_user_t* rootDeniedUser = get_user_by_pid(mailboxes.first_denied_send_user, mailboxes.denied_send_users, my_pid);
-	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox.first_denied_send_user, mailbox.denied_send_users, my_pid);
+	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox->first_denied_send_user, mailbox->denied_send_users, my_pid);
 	if (rootDeniedUser != NULL || ownerDeniedUser != NULL)
 		return MB_PERMISSION_ERROR;
 	//Check if allowed (if private/secured)
 	if (mailbox->mailbox_type == PRIVATE){
-		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox.first_allowed_send_user, mailbox.allowed_send_users, my_pid);
+		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox->first_allowed_send_user, mailbox->allowed_send_users, my_pid);
 		if(ownerAllowedUser==NULL)
 			return MB_PERMISSION_ERROR;
 	}
@@ -182,12 +184,12 @@ int do_mb_retrieve() {
 	int my_pid = mproc[who_p].mp_pid;
 	//Check if DENIED
 	mb_user_t* rootDeniedUser = get_user_by_pid(mailboxes.first_denied_retrieve_user, mailboxes.denied_retrieve_users, my_pid);
-	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox.first_denied_retrieve_user, mailbox.denied_retrieve_users, my_pid);
+	mb_user_t* ownerDeniedUser = get_user_by_pid(mailbox->first_denied_retrieve_user, mailbox->denied_retrieve_users, my_pid);
 	if (rootDeniedUser != NULL || ownerDeniedUser != NULL)
 		return MB_PERMISSION_ERROR;
 	//Check if allowed (if private/secured)
 	if (mailbox->mailbox_type == PRIVATE){
-		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox.first_allowed_retrieve_user, mailbox.allowed_retrieve_users, my_pid);
+		mb_user_t* ownerAllowedUser = get_user_by_pid(mailbox->first_allowed_retrieve_user, mailbox->allowed_retrieve_users, my_pid);
 		if(ownerAllowedUser==NULL)
 			return MB_PERMISSION_ERROR;
 	}
@@ -526,8 +528,8 @@ int do_mb_rmv_oldest_msg() {
 	if(owner == NULL)
 		return MB_PERMISSION_ERROR;
 
-	mb_message_t oldest = mailbox.first_msg;
-	mailbox->first_msg = oldest.next;
+	mb_message_t* oldest = mailbox->first_msg;
+	mailbox->first_msg = oldest->next;
 }
 
 mb_user_t* get_owner_by_pid(int pid) {
