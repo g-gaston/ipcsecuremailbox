@@ -18,11 +18,16 @@ mb_message_t* get_last_message(mb_mailbox_t* mb);
 void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox);
 mb_req_t* get_last_req(mb_mailbox_t* mb);
 
+mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid);
+int add_user(mb_user_t **first_user, int *number_of_users, int pid);
+int remove_user_by_pid(mb_user_t **first_user, int *number_of_users, int pid);
+int create_mailbox(message m_in, int type);
+
 int do_mb_open() {
 
 	char *name = m_in.m3_ca1;
 	//Check if there is a name
-	if (name == NULL || strlen(name) > MAX_LEN_NAME){
+	if (name == NULL || strlen(name) > MAX_LEN_NAME) {
 		return MB_NAME_ERROR;
 	}
 
@@ -32,8 +37,8 @@ int do_mb_open() {
 	mbfound = getMailboxByName(name);
 
 	//If null, create it
-	if (mbfound == NULL){
-		if(mailboxes.num_mbs < MAX_NUM_MAILBOXES){
+	if (mbfound == NULL) {
+		if (mailboxes.num_mbs < MAX_NUM_MAILBOXES) {
 			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
 			if (mailbox == NULL) return MB_ALLOC_MEM_ERROR;
 
@@ -62,7 +67,7 @@ int do_mb_open() {
 			mailboxes.first_mb = mailbox;
 			return mailbox->id;
 		//Max size exceed, return error
-		}else{
+		} else {
 			return MB_MAXMB_ERROR;
 		}
 
@@ -83,7 +88,7 @@ int do_mb_close() {
 
 
 	//If it exists
-	if (mbfound != NULL){
+	if (mbfound != NULL) {
 
 		int my_pid = mproc[who_p].mp_pid;
 		//Check if it is subscribed and unsubscribed it
@@ -94,10 +99,10 @@ int do_mb_close() {
 		mb_message_t* prevmessage;
 		mb_message_t* message;
 		for (int i = 0; i < MAX_NUM_MESSAGES; i++) {
-			if(message != NULL){
+			if (message != NULL) {
 				//Check and delete reference
 				removePidReceivers(my_pid, message);
-			}else{
+			} else {
 				break;
 			}
 			message=message->next;
@@ -306,76 +311,74 @@ void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox
 	free(msg);
 }
 
-mb_mailbox_t* getMailboxByID(int id){
+mb_mailbox_t* getMailboxByID(int id) {
 	mb_mailbox_t* previous=NULL;
 	mb_mailbox_t* mb=NULL;
 
-	if(mailboxes.first_mb != NULL){
+	if (mailboxes.first_mb != NULL) {
 		mb=mailboxes.first_mb;
-		if (mb->id == id){
+		if (mb->id == id) {
 			return mb;
-		}else{
-			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++){
+		} else {
+			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++) {
 				previous = mb;
 				mb = previous->next;
-				if(mb != NULL){
+				if (mb != NULL) {
 					//If coincidence break
-					if(mb->id == id){
+					if (mb->id == id) {
 						return mb;
 					}
-				}else{
+				} else {
 					break;
 				}
 			}
 		}
-
 	}
 	return NULL;
 }
 
-mb_mailbox_t* getMailboxByName(char* name){
+mb_mailbox_t* getMailboxByName(char* name) {
 	mb_mailbox_t* previous;
 	mb_mailbox_t* mb;
-	if(mailboxes.first_mb != NULL){
+	if (mailboxes.first_mb != NULL) {
 		mb=mailboxes.first_mb;
 		if (strcmp(mb->name, name) == 0){
 			return mb;
-		}else{
-			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++){
+		} else {
+			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++) {
 				previous=mb;
 				mb=previous->next;
-				if(mb != NULL){
-					if(strcmp(mb->name, name) == 0){
+				if (mb != NULL) {
+					if (strcmp(mb->name, name) == 0) {
 						return mb;
 					}
-				}else{
+				} else {
 					break;
 				}
 			}
 		}
-
 	}
 	return NULL;
 }
 
 
-void removePidReceivers(int pid, mb_message_t* message){
+void removePidReceivers(int pid, mb_message_t* message) {
 	int num_receivers = message->num_rec;
 	int* receivers = message->receivers_pid;
 
 	int coincidence=-1;
 	//Find the pid
-	for(int i = 0; i < num_receivers; i++){
-		if(receivers[i] == pid){
+	for (int i = 0; i < num_receivers; i++) {
+		if (receivers[i] == pid) {
 			coincidence = i;
 			break;
 		}
 	}
 
 	//Reform the array
-	int j=0;
-	int i=0;
-	if(coincidence != -1){
+	int j = 0;
+	int i = 0;
+	if (coincidence != -1) {
 		if (num_receivers == 1) {
 			message->num_rec--;
 			message->receivers_pid=NULL;
@@ -383,8 +386,8 @@ void removePidReceivers(int pid, mb_message_t* message){
 			return;
 		}
 		int *new_array = malloc((num_receivers-1)*sizeof(int));
-		while(j < num_receivers && i < num_receivers-1){
-			if(j != coincidence){
+		while (j < num_receivers && i < num_receivers-1) {
+			if (j != coincidence) {
 				new_array[i] = receivers[j];
 				i++;
 			}
@@ -396,44 +399,43 @@ void removePidReceivers(int pid, mb_message_t* message){
 	}
 }
 
-void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox){
+void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox) {
 
 	mb_req_t* previous;
 	mb_req_t* present;
 	int num_req = mailbox->num_req;
 
 	present = mailbox->first_req;
-	if(present!= NULL){
+	if (present!= NULL) {
 		//Find the pid
-		for(int i = 0; i < num_req; i++){
-			if(present->pid == pid){
-				if(i == 0){
+		for (int i = 0; i < num_req; i++) {
+			if (present->pid == pid) {
+				if (i == 0) {
 					mailbox->first_req = present->next;
-				}
-				else{
+				} else {
 					previous->next = present->next;
 				}
-			free(present);
-			break;
+				free(present);
+				break;
 			}
-		previous = present;
-		present = previous->next;
+			previous = present;
+			present = previous->next;
 		}
 	}
 }
 
-void removeMailboxByID(int id){
+void removeMailboxByID(int id) {
 
 	mb_mailbox_t* previous;
 	mb_mailbox_t* present;
 	int num_mail = mailboxes.num_mbs;
 
 	present = mailboxes.first_mb;
-	if(present!= NULL){
+	if (present!= NULL) {
 		//Find the pid
-		for(int i = 0; i < num_mail; i++){
-			if(present->id == id){
-				if(i == 0){
+		for (int i = 0; i < num_mail; i++) {
+			if (present->id == id) {
+				if (i == 0) {
 					mailboxes.first_mb = present->next;
 				} else {
 					previous->next = present->next;
@@ -448,55 +450,125 @@ void removeMailboxByID(int id){
 }
 
 int do_mb_be_root() {
-	return 0;
+	if (mailboxes.root_id != 0) {
+		return MB_ROOT_ALREADY_REGISTERED_ERROR;
+	} else {
+		register struct mproc *rmp = mp;
+		mailboxes.root_id = mproc[who_p].mp_pid;
+		return MB_OK;
+	}
 }
 
 int do_mb_assign_leader() {
-	return 0;
+	int pid = m_in.m1_i1;
+	if (add_user(&mailboxes.first_owner, &mailboxes.num_owners, pid) == MB_OK) {
+		return MB_OK;
+	} else {
+		return MB_USER_EXIST_ERROR;
+	}
 }
 
 int do_mb_remove_leader() {
-	return 0;
+	int pid = m_in.m1_i1;
+	if (remove_user_by_pid(&mailboxes.first_owner, &mailboxes.num_owners, pid) == MB_OK) {
+		return MB_OK;
+	} else {
+		return MB_USER_NOT_EXIST_ERROR;
+	}
 }
 
 int do_mb_root_deny_send() {
-	return 0;
+	int pid = m_in.m1_i1;
+	if (add_user(&mailboxes.first_denied_send_user, &mailboxes.denied_send_users, pid) == MB_OK) {
+		return MB_OK;
+	} else {
+		return MB_USER_EXIST_ERROR;
+	}
 }
 
 int do_mb_root_deny_retrieve() {
-	return 0;
+	int pid = m_in.m1_i1;
+	if (add_user(&mailboxes.first_denied_retrieve_user, &mailboxes.denied_retrieve_users, pid) == MB_OK) {
+		return MB_OK;
+	} else {
+		return MB_USER_EXIST_ERROR;
+	}
 }
 
 int do_mb_root_allow_send() {
-	return 0;
+	int pid = m_in.m1_i1;
+	remove_user_by_pid(&mailboxes.first_denied_send_user, &mailboxes.denied_send_users, pid);
+	return MB_OK;
 }
 
 int do_mb_root_allow_retrieve() {
-	return 0;
+	int pid = m_in.m1_i1;
+	remove_user_by_pid(&mailboxes.first_denied_retrieve_user, &mailboxes.denied_retrieve_users, pid);
+	return MB_OK;
 }
 
 int do_mb_create_secure_mailbox() {
-	return 0;
+	return create_mailbox(m_in, PRIVATE);
 }
 
 int do_mb_create_public_mailbox() {
-	return 0;
+	return create_mailbox(m_in, PUBLIC);
 }
 
 int do_mb_deny_send() {
-	return 0;
+	int mb_id = m_in.m1_i1;
+	int pid = m_in.m1_i2;
+	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
+	if (mb_found != NULL) {
+		if (mb_found->mailbox_type == PUBLIC) {
+			return add_user(&mb_found->first_denied_send_user, &mb_found->denied_send_users, pid);
+		} else {
+			return remove_user_by_pid(&mb_found->first_allowed_send_user, &mb_found->allowed_send_users, pid);
+		}
+	}
+	return MB_ERROR;
 }
 
 int do_mb_deny_retrieve() {
-	return 0;
+	int mb_id = m_in.m1_i1;
+	int pid = m_in.m1_i2;
+	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
+	if (mb_found != NULL) {
+		if (mb_found->mailbox_type == PUBLIC) {
+			return add_user(&mb_found->first_denied_retrieve_user, &mb_found->denied_retrieve_users, pid);
+		} else {
+			return remove_user_by_pid(&mb_found->first_allowed_retrieve_user, &mb_found->allowed_retrieve_users, pid);
+		}
+	}
+	return MB_ERROR;
 }
 
 int do_mb_allow_send() {
-	return 0;
+	int mb_id = m_in.m1_i1;
+	int pid = m_in.m1_i2;
+	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
+	if (mb_found != NULL) {
+		if (mb_found->mailbox_type == PUBLIC) {
+			return remove_user_by_pid(&mb_found->first_denied_send_user, &mb_found->denied_send_users, pid);
+		} else {
+			return add_user(&mb_found->first_allowed_send_user, &mb_found->allowed_send_users, pid);
+		}
+	}
+	return MB_ERROR;
 }
 
 int do_mb_allow_retrieve() {
-	return 0;
+	int mb_id = m_in.m1_i1;
+	int pid = m_in.m1_i2;
+	mb_mailbox_t *mb_found = getMailboxByID(mb_id);
+	if (mb_found != NULL) {
+		if (mb_found->mailbox_type == PUBLIC) {
+			return remove_user_by_pid(&mb_found->first_denied_retrieve_user, &mb_found->denied_retrieve_users, pid);
+		} else {
+			return add_user(&mb_found->first_allowed_retrieve_user, &mb_found->allowed_retrieve_users, pid);
+		}
+	}
+	return MB_ERROR;
 }
 
 int do_mb_remove_group() {
@@ -505,5 +577,153 @@ int do_mb_remove_group() {
 
 int do_mb_rmv_oldest_msg() {
 	return 0;
+}
+
+mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid) {
+	mb_user_t* previous = NULL;
+	mb_user_t* user = NULL;
+
+	if (first_user != NULL) {
+		user = first_user;
+		if (user->pid == pid){
+			return user;
+		} else {
+			for (int i = 0; i < numb_users-1; i++) {
+				previous = user;
+				user = previous->next;
+				if (user != NULL){
+					//If coincidence break
+					if (user->pid == pid) {
+						return user;
+					}
+				} else {
+					break;
+				}
+			}
+		}
+
+	}
+	return NULL;
+}
+
+int add_user(mb_user_t **first_user, int *number_of_users, int pid) {
+	if (get_user_by_pid(*first_user, *number_of_users, pid) == NULL) {
+		mb_user_t *new_user = malloc(sizeof(mb_user_t));
+		if (new_user == NULL) {
+			return MB_ALLOC_MEM_ERROR;
+		}
+		new_user->pid = pid;
+		new_user->next = *first_user;
+		*first_user = new_user;
+		(*number_of_users)++;
+		return MB_OK;
+	} else {
+		return MB_USER_EXIST_ERROR;
+	}
+}
+
+int remove_user_by_pid(mb_user_t **first_user, int *number_of_users, int pid) {
+	mb_user_t* previous;
+	mb_user_t* present;
+	int num_users = *number_of_users;
+
+	present = *first_user;
+	if (present!= NULL) {
+		//Find the pid
+		for (int i = 0; i < num_users; i++) {
+			if (present->pid == pid) {
+				if (i == 0) {
+					*first_user = present->next;
+				} else {
+					previous->next = present->next;
+				}
+				free(present);
+				(*number_of_users)--;
+				return MB_OK;
+			}
+			previous = present;
+			present = previous->next;
+		}
+	}
+	return MB_ERROR;
+}
+
+int create_mailbox(message m_in, int type) {
+	char *name = m_in.m3_ca1;
+	//Check if there is a name
+	if (name == NULL || strlen(name) > MAX_LEN_NAME) {
+		return MB_NAME_ERROR;
+	}
+
+	mb_mailbox_t* mbfound = NULL;
+	mbfound = getMailboxByName(name);
+
+	if (mbfound == NULL) {
+		if (mailboxes.num_mbs < MAX_NUM_MAILBOXES) {
+			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
+			if (mailbox == NULL) return MB_ALLOC_MEM_ERROR;
+
+			char *d = malloc(strlen(name) + 1);   // Space for length plus nul
+			if (d == NULL) return MB_ALLOC_MEM_ERROR;       // No memory
+			strcpy(d, name);
+
+			mailbox->name = d;
+
+			register struct mproc *rmp = mp;
+			mailbox->owner_pid = mproc[who_p].mp_pid;
+
+			if (type == PRIVATE) {
+				mailbox->mailbox_type = PRIVATE;
+				int num_recv = m_in.m1_i1;
+				int num_send = m_in.m1_i2;
+
+				/* Alloc memory and copy msg text and pids receivers from user process */
+				int *pid_recv = malloc(num_recv * sizeof(int));
+				int *pid_send = malloc(num_send * sizeof(int));
+				if (pid_recv == NULL || pid_send == NULL) {
+					return MB_ALLOC_MEM_ERROR;
+				}
+				sys_datacopy(who_e, (vir_bytes)m_in.m1_p1,
+								SELF, (vir_bytes)pid_recv, num_recv);
+				sys_datacopy(who_e, (vir_bytes)m_in.m1_p2,
+								SELF, (vir_bytes)pid_send, num_send * sizeof(int));
+
+				for (int i = 0; i < num_recv; ++i) {
+					add_user(&mailbox->first_allowed_retrieve_user, &mailbox->allowed_retrieve_users, pid_recv[i]);
+				}
+
+				for (int i = 0; i < num_send; ++i) {
+					add_user(&mailbox->first_allowed_send_user, &mailbox->allowed_send_users, pid_send[i]);
+				}
+			} else {
+				mailbox->mailbox_type = PUBLIC;
+			}
+
+			//Increase the id master counter
+			mailboxes.id_master++;
+			mailbox->id = mailboxes.id_master;
+
+			mailbox->first_msg = NULL;
+			mailbox->num_msg = 0;
+			mailbox->first_req = NULL;
+			mailbox->num_req = 0;
+			mailbox->conn_process = 1;
+			mailbox->next = NULL;
+
+			//Increase mailbox counter and add new mailbox
+			if (mailboxes.num_mbs > 0) {
+				mailbox->next = mailboxes.first_mb;
+			}
+			mailboxes.num_mbs++;
+			mailboxes.first_mb = mailbox;
+			return mailbox->id;
+		//Max size exceed, return error
+		} else {
+			return MB_MAXMB_ERROR;
+		}
+	//If not, return id
+	} else {
+		return MB_ERROR;
+	}
 }
 
