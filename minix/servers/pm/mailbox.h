@@ -61,13 +61,13 @@ typedef struct mb_mailbox_t {
 	int conn_process;
 	int owner_pid;
 	int mailbox_type;
-	mb_user_t first_denied_send_user;
+	mb_user_t *first_denied_send_user;
 	int denied_send_users;
-	mb_user_t first_allowed_send_user;
+	mb_user_t *first_allowed_send_user;
 	int allowed_send_users;
-	mb_user_t first_denied_retrieve_user;
+	mb_user_t *first_denied_retrieve_user;
 	int denied_retrieve_users;
-	mb_user_t first_allowed_retrieve_user;
+	mb_user_t *first_allowed_retrieve_user;
 	int allowed_retrieve_users;
 	struct mb_mailbox_t *next;
 } mb_mailbox_t;
@@ -76,6 +76,11 @@ typedef struct mb_mbs_ts{
 	struct mb_mailbox_t *first_mb;
 	int num_mbs;
 	int id_master;
+	int root_id;
+	mb_user_t *first_denied_send_user;
+	int denied_send_users;
+	mb_user_t *first_denied_retrieve_user;
+	int denied_retrieve_users;
 } mb_mbs_t;
 
 #endif /* _MBOX_H_ */

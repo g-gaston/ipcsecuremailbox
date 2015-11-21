@@ -5,7 +5,7 @@
 #include "glo.h"
 #include "mproc.h"
 
-mb_mbs_t mailboxes={NULL, 0, 20}; //Start ids in 20 so we can use (1,20) for errors
+mb_mbs_t mailboxes={NULL, 0, 20, 0, NULL, 0, NULL, 0}; //Start ids in 20 so we can use (1,20) for errors
 
 //Functions declaration
 mb_mailbox_t* getMailboxByID(int id);
