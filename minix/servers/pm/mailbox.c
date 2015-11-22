@@ -779,6 +779,6 @@ int create_mailbox(message m_in, int type) {
 		}
 	//If not, return id
 	} else {
-		return MB_ERROR;
+		return MB_MAILBOX_ALREADY_EXISTS_ERROR;
 	}
 }
