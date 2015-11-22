@@ -21,6 +21,7 @@
 #define MB_ROOT_ALREADY_REGISTERED_ERROR -13
 #define MB_USER_EXIST_ERROR -14
 #define MB_USER_NOT_EXIST_ERROR -15
+#define MB_MAILBOX_ALREADY_EXISTS_ERROR -16
 
 int transform_result(int result);
 
@@ -157,6 +158,11 @@ int mb_rmv_oldest_msg(int mb_id) {
 	message m;
 	m.m1_i1 = mb_id;
 	return transform_result(_syscall(PM_PROC_NR, MB_REMOVEOLDMSG, &m));
+}
+
+int mb_exit_root() {
+	message m;
+	return transform_result(_syscall(PM_PROC_NR, MB_EXITROOT, &m));
 }
 
 int transform_result(int result) {

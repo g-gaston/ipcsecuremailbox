@@ -658,6 +658,20 @@ int do_mb_rmv_oldest_msg() {
 	return MB_OK;
 }
 
+int do_mb_exit_root() {
+	if (mailboxes.root_id == 0) {
+		return MB_ERROR;
+	} else {
+		register struct mproc *rmp = mp;
+		int my_pid = mproc[who_p].mp_pid;
+		if (mailboxes.root_id == my_pid) {
+			mailboxes.root_id = 0;
+			return MB_OK;
+		}
+		return MB_PERMISSION_ERROR;
+	}
+}
+
 mb_user_t* get_owner_by_pid(int pid) {
 	mb_user_t* previous = NULL;
 	mb_user_t* user = NULL;
