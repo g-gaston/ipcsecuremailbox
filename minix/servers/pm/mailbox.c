@@ -62,16 +62,16 @@ int do_mb_close() {
 		removeMailboxSubscription(my_pid, mbfound);
 
 		//Check messages and mark as read it
-		mb_message_t* prevmessage;
-		mb_message_t* message;
-		for (int i = 0; i < MAX_NUM_MESSAGES; i++) {
-			if (message != NULL) {
-				//Check and delete reference
-				removePidReceivers(my_pid, message);
-			} else {
-				break;
+		mb_message_t* prevmessage = NULL;
+		mb_message_t* message = mbfound->first_msg;
+		while (message != NULL) {
+			//Check and delete reference
+			removePidReceivers(my_pid, message);
+			if (message->num_rec == 0) {
+				remove_msg(message, prevmessage, mbfound);
 			}
-			message=message->next;
+			prevmessage = message;
+			message = message->next;
 		}
 
 		//If there are more decrease, if not error. ONLY owner removes
@@ -627,8 +627,7 @@ int do_mb_remove_group() {
 	register struct mproc *rmp = mp;
 	int my_pid = mproc[who_p].mp_pid;
 	//Check if OWNER
-	mb_user_t* owner = get_owner_by_pid(my_pid);
-	if(owner == NULL)
+	if(mailbox->owner_pid != my_pid && mailboxes.root_id != my_pid)
 		return MB_PERMISSION_ERROR;
 
 	removeMailboxByID(id);
@@ -647,8 +646,7 @@ int do_mb_rmv_oldest_msg() {
 	register struct mproc *rmp = mp;
 	int my_pid = mproc[who_p].mp_pid;
 	//Check if OWNER
-	mb_user_t* owner = get_owner_by_pid(my_pid);
-	if(owner == NULL)
+	if(mailbox->owner_pid != my_pid && mailboxes.root_id != my_pid)
 		return MB_PERMISSION_ERROR;
 
 	mb_message_t* oldest = mailbox->first_msg;
