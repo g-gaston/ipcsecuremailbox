@@ -408,6 +408,7 @@ void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox) {
 					previous->next = present->next;
 				}
 				free(present);
+				mailbox->num_req--;
 				break;
 			}
 			previous = present;
@@ -433,6 +434,7 @@ void removeMailboxByID(int id) {
 					previous->next = present->next;
 				}
 				free(present);
+				mailboxes.num_mbs--;
 				break;
 			}
 			previous = present;
