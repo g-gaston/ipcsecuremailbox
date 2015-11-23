@@ -24,6 +24,9 @@ mb_user_t* get_user_by_pid(mb_user_t *first_user, int numb_users, int pid);
 int add_user(mb_user_t **first_user, int *number_of_users, int pid);
 int remove_user_by_pid(mb_user_t **first_user, int *number_of_users, int pid);
 int create_mailbox(message m_in, int type);
+void remove_all_messages (mb_mailbox_t *mb);
+void remove_all_req(mb_mailbox_t *mb);
+void remove_all_users(mb_user_t **first_user, int num_users);
 
 int do_mb_open() {
 
@@ -433,6 +436,13 @@ void removeMailboxByID(int id) {
 				} else {
 					previous->next = present->next;
 				}
+				free(present->name);
+				remove_all_messages(present);
+				remove_all_req(present);
+				remove_all_users(&present->first_denied_send_user, present->denied_send_users);
+				remove_all_users(&present->first_denied_retrieve_user, present->denied_retrieve_users);
+				remove_all_users(&present->first_allowed_send_user, present->allowed_send_users);
+				remove_all_users(&present->first_allowed_retrieve_user, present->allowed_retrieve_users);
 				free(present);
 				mailboxes.num_mbs--;
 				break;
@@ -655,6 +665,9 @@ int do_mb_rmv_oldest_msg() {
 	else
 		mailbox->first_msg = NULL;
 
+	free(oldest->text);
+	free(oldest->receivers_pid);
+	free(oldest);
 	return MB_OK;
 }
 
@@ -852,5 +865,46 @@ int create_mailbox(message m_in, int type) {
 	//If not, return id
 	} else {
 		return MB_MAILBOX_ALREADY_EXISTS_ERROR;
+	}
+}
+
+void remove_all_messages(mb_mailbox_t *mb) {
+	mb_message_t *msg_aux = mb->first_msg;
+	for (int i = 0; i < mb->num_msg; i++) {
+		if (mb->first_msg == NULL) {
+			return;
+		} else {
+			msg_aux = mb->first_msg;
+			mb->first_msg = msg_aux->next;
+			free(msg_aux->text);
+			free(msg_aux->receivers_pid);
+			free(msg_aux);
+		}
+	}
+}
+
+void remove_all_req(mb_mailbox_t *mb) {
+	mb_req_t *req_aux = mb->first_req;
+	for (int i = 0; i < mb->num_req; i++) {
+		if (mb->first_req == NULL) {
+			return;
+		} else {
+			req_aux = mb->first_req;
+			mb->first_req = req_aux->next;
+			free(req_aux);
+		}
+	}
+}
+
+void remove_all_users(mb_user_t **first_user, int num_users) {
+	mb_user_t *user_aux = *first_user;
+	for (int i = 0; i < num_users; i++) {
+		if (*first_user == NULL) {
+			return;
+		} else {
+			user_aux = *first_user;
+			*first_user = user_aux->next;
+			free(user_aux);
+		}
 	}
 }
