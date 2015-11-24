@@ -790,11 +790,18 @@ int create_mailbox(message m_in, int type) {
 		return MB_PERMISSION_ERROR;
 	}
 
-	char *name = m_in.m3_ca1;
+	int len_msg = m_in.m1_i3;
 	//Check if there is a name
-	if (name == NULL || strlen(name) > MAX_LEN_NAME) {
+	if (len_msg > MAX_LEN_NAME) {
 		return MB_NAME_ERROR;
 	}
+
+	char *name = malloc(len_msg + 1);
+	if (name == NULL) {
+		return MB_ALLOC_MEM_ERROR;
+	}
+	sys_datacopy(who_e, (vir_bytes)m_in.m1_p3,
+				SELF, (vir_bytes)name, len_msg + 1);
 
 	mb_mailbox_t* mbfound = NULL;
 	mbfound = getMailboxByName(name);
@@ -804,11 +811,7 @@ int create_mailbox(message m_in, int type) {
 			mb_mailbox_t *mailbox = malloc(sizeof(mb_mailbox_t));
 			if (mailbox == NULL) return MB_ALLOC_MEM_ERROR;
 
-			char *d = malloc(strlen(name) + 1);   // Space for length plus nul
-			if (d == NULL) return MB_ALLOC_MEM_ERROR;       // No memory
-			strcpy(d, name);
-
-			mailbox->name = d;
+			mailbox->name = name;
 
 			register struct mproc *rmp = mp;
 			mailbox->owner_pid = mproc[who_p].mp_pid;
@@ -825,7 +828,7 @@ int create_mailbox(message m_in, int type) {
 					return MB_ALLOC_MEM_ERROR;
 				}
 				sys_datacopy(who_e, (vir_bytes)m_in.m1_p1,
-								SELF, (vir_bytes)pid_recv, num_recv);
+								SELF, (vir_bytes)pid_recv, num_recv * sizeof(int));
 				sys_datacopy(who_e, (vir_bytes)m_in.m1_p2,
 								SELF, (vir_bytes)pid_send, num_send * sizeof(int));
 
