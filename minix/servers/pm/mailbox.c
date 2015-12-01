@@ -72,9 +72,15 @@ int do_mb_close() {
 			removePidReceivers(my_pid, message);
 			if (message->num_rec == 0) {
 				remove_msg(message, prevmessage, mbfound);
+				if (prevmessage == NULL) {
+					message = mbfound->first_msg;
+				} else{
+					message = prevmessage->next;
+				}
+			} else {
+				prevmessage = message;
+				message = message->next;
 			}
-			prevmessage = message;
-			message = message->next;
 		}
 
 		//If there are more decrease, if not error. ONLY owner removes
@@ -660,15 +666,18 @@ int do_mb_rmv_oldest_msg() {
 		return MB_PERMISSION_ERROR;
 
 	mb_message_t* oldest = mailbox->first_msg;
-	if(oldest != NULL)
+	if(mailbox->num_msg > 0 && oldest != NULL) {
 		mailbox->first_msg = oldest->next;
-	else
-		mailbox->first_msg = NULL;
-
-	free(oldest->text);
-	free(oldest->receivers_pid);
-	free(oldest);
-	return MB_OK;
+		free(oldest->text);
+		if (oldest->num_rec > 0) {
+			free(oldest->receivers_pid);
+		}
+		free(oldest);
+		mailbox->num_msg--;
+		return MB_OK;
+	} else {
+		return MB_EMPTYMB_ERROR;
+	}
 }
 
 int do_mb_exit_root() {
@@ -880,7 +889,9 @@ void remove_all_messages(mb_mailbox_t *mb) {
 			msg_aux = mb->first_msg;
 			mb->first_msg = msg_aux->next;
 			free(msg_aux->text);
-			free(msg_aux->receivers_pid);
+			if (msg_aux->num_rec > 0) {
+				free(msg_aux->receivers_pid);
+			}
 			free(msg_aux);
 		}
 	}
