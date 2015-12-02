@@ -10,7 +10,7 @@ mb_mbs_t mailboxes={NULL, 0, 20, 0, NULL, 0, NULL, 0, NULL, 0}; //Start ids in 2
 //Functions declaration
 mb_mailbox_t* getMailboxByID(int id);
 mb_mailbox_t* getMailboxByName(char* name);
-void removeMailboxByID(int id);
+int removeMailboxByID(int id);
 void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox);
 void removePidReceivers(int pid, mb_message_t* message);
 
@@ -27,6 +27,8 @@ int create_mailbox(message m_in, int type);
 void remove_all_messages (mb_mailbox_t *mb);
 void remove_all_req(mb_mailbox_t *mb);
 void remove_all_users(mb_user_t **first_user, int num_users);
+
+void print_status();
 
 int do_mb_open() {
 
@@ -313,26 +315,17 @@ void remove_msg (mb_message_t* msg, mb_message_t* msg_prv, mb_mailbox_t* mailbox
 }
 
 mb_mailbox_t* getMailboxByID(int id) {
-	mb_mailbox_t* previous=NULL;
-	mb_mailbox_t* mb=NULL;
 
-	if (mailboxes.first_mb != NULL) {
-		mb=mailboxes.first_mb;
-		if (mb->id == id) {
-			return mb;
+	mb_mailbox_t* present = mailboxes.first_mb;
+	int num_mail = mailboxes.num_mbs;
+	for(unsigned i = 0; i < num_mail; ++i) {
+		if (present == NULL) {
+			return NULL;
+		}
+		if (present->id == id) {
+			return present;
 		} else {
-			for (int i = 0; i < MAX_NUM_MAILBOXES-1; i++) {
-				previous = mb;
-				mb = previous->next;
-				if (mb != NULL) {
-					//If coincidence break
-					if (mb->id == id) {
-						return mb;
-					}
-				} else {
-					break;
-				}
-			}
+			present = present->next;
 		}
 	}
 	return NULL;
@@ -426,7 +419,7 @@ void removeMailboxSubscription(int pid, mb_mailbox_t* mailbox) {
 	}
 }
 
-void removeMailboxByID(int id) {
+int removeMailboxByID(int id) {
 
 	mb_mailbox_t* previous;
 	mb_mailbox_t* present;
@@ -451,12 +444,13 @@ void removeMailboxByID(int id) {
 				remove_all_users(&present->first_allowed_retrieve_user, present->allowed_retrieve_users);
 				free(present);
 				mailboxes.num_mbs--;
-				break;
+				return MB_OK;
 			}
 			previous = present;
 			present = previous->next;
 		}
 	}
+	return MB_ERROR;
 }
 
 int do_mb_be_root() {
@@ -646,8 +640,8 @@ int do_mb_remove_group() {
 	if(mailbox->owner_pid != my_pid && mailboxes.root_id != my_pid)
 		return MB_PERMISSION_ERROR;
 
-	removeMailboxByID(id);
-	return MB_OK;
+	int result = removeMailboxByID(id);
+	return result;
 }
 
 int do_mb_rmv_oldest_msg() {
@@ -825,6 +819,15 @@ int create_mailbox(message m_in, int type) {
 			register struct mproc *rmp = mp;
 			mailbox->owner_pid = mproc[who_p].mp_pid;
 
+			mailbox->first_denied_send_user = NULL;
+			mailbox->first_denied_retrieve_user = NULL;
+			mailbox->first_allowed_send_user = NULL;
+			mailbox->first_allowed_retrieve_user = NULL;
+			mailbox->denied_send_users = 0;
+			mailbox->denied_retrieve_users = 0;
+			mailbox->allowed_send_users = 0;
+			mailbox->allowed_retrieve_users = 0;
+
 			if (type == PRIVATE) {
 				mailbox->mailbox_type = PRIVATE;
 				int num_recv = m_in.m1_i1;
@@ -860,7 +863,7 @@ int create_mailbox(message m_in, int type) {
 			mailbox->num_msg = 0;
 			mailbox->first_req = NULL;
 			mailbox->num_req = 0;
-			mailbox->conn_process = 1;
+			mailbox->conn_process = 0;
 			mailbox->next = NULL;
 
 			//Increase mailbox counter and add new mailbox
@@ -921,4 +924,23 @@ void remove_all_users(mb_user_t **first_user, int num_users) {
 			free(user_aux);
 		}
 	}
+}
+
+void print_status() {
+	mb_mailbox_t* present = mailboxes.first_mb;
+	int num_mail = mailboxes.num_mbs;
+	printf("Mailboxes: %d\n", mailboxes.num_mbs);
+	for(unsigned i = 0; i < num_mail; ++i) {
+		if (present == NULL) {
+			return;
+		}
+		printf("\tMb name %s\n", present->name);
+		printf("\tNumber of messages: %d\n", present->num_msg);
+		printf("\tNumber of denied_send_user: %d\n", present->denied_send_users);
+		printf("\tNumber of denied_retrieve_user: %d\n", present->denied_retrieve_users);
+		printf("\tNumber of allowed_send_user: %d\n", present->allowed_send_users);
+		printf("\tNumber of allowed_retrieve_user: %d\n", present->allowed_retrieve_users);
+		present = present->next;
+	}
+
 }
